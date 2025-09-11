@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # Servicio de autenticación
+  auth-service:
+    build: .
+    container_name: auth-microservice
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_DIALECT=sqlite
+      - DB_STORAGE=/app/data/auth_database.sqlite
+      - JWT_SECRET=your_super_secret_jwt_key_change_this_in_production_123456789
+      - JWT_EXPIRES_IN=24h
+      - BCRYPT_ROUNDS=12
+    volumes:
+      # Persistir la base de datos SQLite
+      - auth_data:/app/data
+      # Para desarrollo: montar código fuente (comentar en producción)
+      - ./src:/app/src:ro
+    networks:
+      - auth_network
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    healthcheck:
+      test: ["CMD", "node", "-e", "const http = require('http'); const options = { host: 'localhost', port: 3000, path: '/health' }; const req = http.get(options, (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }); req.on('error', () => { process.exit(1); });"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Base de datos MySQL (para producción)
+  mysql:
+    image: mysql:8.0
+    container_name: auth-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password_123
+      - MYSQL_DATABASE=auth_db
+      - MYSQL_USER=auth_user
+      - MYSQL_PASSWORD=auth_password_123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - auth_network
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Redis para caché (opcional, para funcionalidades futuras)
+  redis:
+    image: redis:7-alpine
+    container_name: auth-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - auth_network
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redis_password_123
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx como reverse proxy (opcional, para producción)
+  nginx:
+    image: nginx:alpine
+    container_name: auth-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # - ./ssl:/etc/nginx/ssl:ro  # Para certificados SSL
+    networks:
+      - auth_network
+    depends_on:
+      - auth-service
+    restart: unless-stopped
+    profiles:
+      - production  # Solo se ejecuta con --profile production
+
+# Volúmenes para persistir datos
+volumes:
+  auth_data:
+    driver: local
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Red personalizada
+networks:
+  auth_network:
+    driver: bridge
