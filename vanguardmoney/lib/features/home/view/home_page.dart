@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/navigation_provider.dart';
 import 'tabs/home_tab_page.dart';
 import 'tabs/planes_tab_page.dart';
-import 'tabs/registro_tab_page.dart';
+import '../../register_ingreso/views/transacciones_view.dart';
+import '../../auth/view_model/auth_provider.dart';
 import 'tabs/reportes_tab_page.dart';
 import 'ai_analysis_page.dart';
 import 'widgets/profile_drawer.dart';
@@ -16,11 +17,15 @@ class HomePage extends ConsumerWidget {
     final currentIndex = ref.watch(currentIndexProvider);
     final showFab = ref.watch(showFabProvider);
 
+  // Obtener el usuario actual desde el provider correcto
+  final user = ref.watch(currentUserProvider);
+  final userId = user?.id ?? '';
+
     // Lista de páginas para IndexedStack
     final pages = [
       const HomeTabPage(),
       const PlanesTabPage(),
-      const RegistroTabPage(),
+      TransaccionesView(idUsuario: userId),
       const ReportesTabPage(),
     ];
 
