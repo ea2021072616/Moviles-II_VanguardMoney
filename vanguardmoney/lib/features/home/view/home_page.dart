@@ -38,7 +38,7 @@ class HomePage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Bienvenido, ${authState.user?.fullName ?? 'Usuario'}!',
+                      'Bienvenido, ${authState.userName ?? 'Usuario'}!',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),

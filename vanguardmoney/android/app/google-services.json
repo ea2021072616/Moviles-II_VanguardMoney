@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "604435189510",
+    "project_id": "vanguardmoney",
+    "storage_bucket": "vanguardmoney.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:604435189510:android:7ee15b3e0a774ce280d887",
+        "android_client_info": {
+          "package_name": "com.example.vanguardmoney"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARlm413uAueq8wZgaurQRhjxGX_oE9vHY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

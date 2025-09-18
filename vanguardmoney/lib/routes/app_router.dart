@@ -1,7 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/auth/view/login_page.dart';
-import '../features/auth/view/register_page.dart';
 import '../features/home/view/home_page.dart';
 import '../features/auth/view_model/auth_provider.dart';
 
@@ -17,11 +16,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginPage(),
-      ),
-      GoRoute(
-        path: '/register',
-        name: 'register',
-        builder: (context, state) => const RegisterPage(),
       ),
 
       // Rutas principales (protegidas)
@@ -43,16 +37,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     // Redirección global basada en autenticación
     redirect: (context, state) {
       final isAuthenticated = ref.read(authProvider).isAuthenticated;
-      final isLogin = state.fullPath == '/login';
-      final isRegister = state.fullPath == '/register';
+      final isLoggingIn = state.fullPath == '/login';
 
-      // Si no está autenticado y no está en login ni registro, redirigir a login
-      if (!isAuthenticated && !isLogin && !isRegister) {
+      // Si no está autenticado y no está en login, redirigir a login
+      if (!isAuthenticated && !isLoggingIn) {
         return '/login';
       }
 
-      // Si está autenticado y está en login o registro, redirigir a home
-      if (isAuthenticated && (isLogin || isRegister)) {
+      // Si está autenticado y está en login, redirigir a home
+      if (isAuthenticated && isLoggingIn) {
         return '/home';
       }
 
