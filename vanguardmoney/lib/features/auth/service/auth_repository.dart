@@ -335,6 +335,110 @@ class AuthRepository {
     }
   }
 
+  /// Actualizar perfil del usuario en Firestore
+  Future<UserProfileModel> updateUserProfile({
+    required String uid,
+    String? username,
+    String? currency,
+    String? photoUrl,
+  }) async {
+    try {
+      final docRef = _firestore.collection('users').doc(uid);
+
+      // Preparar datos para actualizar
+      final Map<String, dynamic> updateData = {};
+
+      if (username != null && username.isNotEmpty) {
+        updateData['username'] = username.trim();
+      }
+
+      if (currency != null && currency.isNotEmpty) {
+        updateData['currency'] = currency;
+      }
+
+      if (photoUrl != null) {
+        updateData['photoUrl'] = photoUrl;
+      }
+
+      // Solo actualizar si hay datos para cambiar
+      if (updateData.isNotEmpty) {
+        await docRef.update(updateData);
+      }
+
+      // Obtener el perfil actualizado
+      final updatedDoc = await docRef.get();
+      if (!updatedDoc.exists) {
+        throw const AuthException(
+          'Perfil de usuario no encontrado',
+          'profile-not-found',
+        );
+      }
+
+      return UserProfileModel.fromMap(updatedDoc.data()!);
+    } on FirebaseException catch (e) {
+      throw AuthException('Error al actualizar perfil: ${e.message}', e.code);
+    } catch (e) {
+      throw AuthException(
+        'Error inesperado al actualizar perfil: $e',
+        'unknown',
+      );
+    }
+  }
+
+  /// Actualizar el displayName en Firebase Auth (opcional)
+  Future<void> updateFirebaseDisplayName(String displayName) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw const AuthException('Usuario no encontrado', 'user-not-found');
+      }
+
+      await user.updateDisplayName(displayName);
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_getAuthErrorMessage(e.code), e.code);
+    } catch (e) {
+      throw AuthException('Error inesperado: $e', 'unknown');
+    }
+  }
+
+  /// Actualizar foto de perfil en Firebase Auth (opcional)
+  Future<void> updateFirebasePhotoUrl(String photoUrl) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw const AuthException('Usuario no encontrado', 'user-not-found');
+      }
+
+      await user.updatePhotoURL(photoUrl);
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(_getAuthErrorMessage(e.code), e.code);
+    } catch (e) {
+      throw AuthException('Error inesperado: $e', 'unknown');
+    }
+  }
+
+  /// Verificar si un username ya existe (para validación)
+  Future<bool> isUsernameAvailable(String username, String currentUid) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('users')
+          .where('username', isEqualTo: username.trim())
+          .get();
+
+      // Si no hay documentos, el username está disponible
+      if (querySnapshot.docs.isEmpty) {
+        return true;
+      }
+
+      // Si el único documento es del usuario actual, está disponible
+      return querySnapshot.docs.length == 1 &&
+          querySnapshot.docs.first.id == currentUid;
+    } catch (e) {
+      // En caso de error, asumir que no está disponible por seguridad
+      return false;
+    }
+  }
+
   /// Obtener mensajes de error localizados
   String _getAuthErrorMessage(String code) {
     switch (code) {
