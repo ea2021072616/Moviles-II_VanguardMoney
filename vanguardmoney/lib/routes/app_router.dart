@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../features/auth/view/login_page.dart';
+import '../features/auth/view/edit_profile_page.dart';
 import '../features/home/view/home_page.dart';
 import '../core/widgets/splash_screen.dart';
 
@@ -28,6 +29,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/home',
         name: 'home',
         builder: (context, state) => const HomePage(),
+      ),
+
+      // Ruta para editar perfil
+      GoRoute(
+        path: '/edit-profile',
+        name: 'editProfile',
+        builder: (context, state) => const EditProfilePage(),
       ),
 
       // Ruta de fallback

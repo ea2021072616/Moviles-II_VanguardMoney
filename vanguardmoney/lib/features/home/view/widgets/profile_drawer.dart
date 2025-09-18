@@ -22,7 +22,7 @@ class ProfileDrawer extends ConsumerWidget {
             context,
             Icons.account_circle,
             'Mi Perfil',
-            () => _showComingSoon(context, 'Editar Perfil'),
+            () => context.pushNamed('editProfile'),
           ),
           _buildMenuItem(
             context,
@@ -81,17 +81,18 @@ class ProfileDrawer extends ConsumerWidget {
           end: Alignment.bottomRight,
           colors: [
             Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
           ],
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Avatar del usuario
           CircleAvatar(
             radius: 35,
-            backgroundColor: Colors.white.withOpacity(0.2),
+            backgroundColor: Colors.white.withValues(alpha: 0.2),
             child: currentUser?.photoUrl != null
                 ? ClipOval(
                     child: Image.network(
@@ -100,7 +101,7 @@ class ProfileDrawer extends ConsumerWidget {
                       height: 70,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return Icon(
+                        return const Icon(
                           Icons.person,
                           size: 40,
                           color: Colors.white,
@@ -108,29 +109,33 @@ class ProfileDrawer extends ConsumerWidget {
                       },
                     ),
                   )
-                : Icon(Icons.person, size: 40, color: Colors.white),
+                : const Icon(Icons.person, size: 40, color: Colors.white),
           ),
           const SizedBox(height: 12),
 
           // Nombre del usuario
-          Text(
-            currentUser?.preferredName ?? 'Usuario',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+          Flexible(
+            child: Text(
+              currentUser?.preferredName ?? 'Usuario',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
 
           // Email del usuario
-          Text(
-            currentUser?.email ?? '',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.white.withOpacity(0.9),
+          Flexible(
+            child: Text(
+              currentUser?.email ?? '',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white.withValues(alpha: 0.9),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
