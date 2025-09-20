@@ -122,17 +122,45 @@ class AuthRepository {
   /// Iniciar sesión con Google
   Future<UserModel> signInWithGoogle() async {
     try {
+      // IMPORTANTE: Cerrar completamente cualquier sesión previa
+      await _firebaseAuth.signOut();
+      await _googleSignIn.signOut();
+
+      // Importante: signIn() devuelve null si el usuario cancela
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
+      // Si el usuario cancela el login, lanzar excepción inmediatamente
       if (googleUser == null) {
+        // Asegurar que no hay sesión activa
+        await _firebaseAuth.signOut();
         throw AuthException(
-          message: 'Inicio de sesión cancelado',
+          message: 'Inicio de sesión cancelado por el usuario',
           code: 'SIGN_IN_CANCELLED',
+        );
+      }
+
+      // Verificar que el usuario de Google es válido
+      if (googleUser.email.isEmpty) {
+        await _firebaseAuth.signOut();
+        await _googleSignIn.signOut();
+        throw AuthException(
+          message: 'No se pudo obtener información de la cuenta de Google',
+          code: 'GOOGLE_ACCOUNT_INVALID',
         );
       }
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
+
+      // Verificar que tenemos los tokens necesarios
+      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+        await _firebaseAuth.signOut();
+        await _googleSignIn.signOut();
+        throw AuthException(
+          message: 'Error al obtener credenciales de Google',
+          code: 'GOOGLE_AUTH_FAILED',
+        );
+      }
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -144,18 +172,30 @@ class AuthRepository {
       );
 
       if (result.user == null) {
+        await _firebaseAuth.signOut();
+        await _googleSignIn.signOut();
         throw AuthException(
           message: 'Error al iniciar sesión con Google',
           code: 'GOOGLE_SIGNIN_FAILED',
         );
       }
 
-      // Crear o actualizar perfil en Firestore si es primera vez
-      await _createOrUpdateUserProfile(result.user!);
+      // Crear o actualizar perfil en Firestore con información de Google
+      await _createOrUpdateGoogleUserProfile(result.user!, googleUser);
 
       return UserModel.fromFirebaseUser(result.user!);
-    } catch (e, stackTrace) {
-      throw ErrorHandler.handleError(e, stackTrace);
+    } catch (e) {
+      // Si es una cancelación u otro error, cerrar cualquier sesión parcial
+      if (e is AuthException &&
+          (e.code == 'SIGN_IN_CANCELLED' ||
+              e.code == 'GOOGLE_ACCOUNT_INVALID' ||
+              e.code == 'GOOGLE_AUTH_FAILED')) {
+        await _firebaseAuth.signOut();
+        await _googleSignIn.signOut();
+      }
+
+      // Re-lanzar la excepción para que el ViewModel la maneje
+      rethrow;
     }
   }
 
@@ -267,27 +307,34 @@ class AuthRepository {
 
   // ========== MÉTODOS AUXILIARES ==========
 
-  /// Crear o actualizar perfil de usuario en Firestore
-  Future<void> _createOrUpdateUserProfile(User user) async {
+  /// Crear o actualizar perfil de usuario específico para Google
+  Future<void> _createOrUpdateGoogleUserProfile(
+    User user,
+    GoogleSignInAccount googleUser,
+  ) async {
     try {
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
 
       if (!userDoc.exists) {
-        // Crear nuevo perfil
+        // Crear nuevo perfil con información real de Google
         final profile = UserProfileModel.fromFirebaseUser(
           uid: user.uid,
-          email: user.email ?? '',
-          username: user.displayName ?? 'Usuario',
-          currency: 'USD', // Valor por defecto
+          email: user.email ?? googleUser.email,
+          username:
+              user.displayName ?? googleUser.displayName ?? 'Usuario de Google',
+          currency: 'S/', // Moneda por defecto para Perú (basado en tu app)
           verified: user.emailVerified,
         );
 
         await _firestore.collection('users').doc(user.uid).set(profile.toMap());
       } else {
-        // Actualizar información básica
+        // Actualizar información con datos de Google
         await _firestore.collection('users').doc(user.uid).update({
-          'email': user.email,
-          'username': user.displayName ?? userDoc.data()!['username'],
+          'email': user.email ?? googleUser.email,
+          'username':
+              user.displayName ??
+              googleUser.displayName ??
+              userDoc.data()!['username'],
           'verified': user.emailVerified,
           'lastLogin': FieldValue.serverTimestamp(),
         });

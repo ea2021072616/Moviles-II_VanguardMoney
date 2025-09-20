@@ -128,7 +128,14 @@ class AuthViewModel extends AsyncNotifier<AuthState> {
       final user = await _authRepository.signInWithGoogle();
       state = AsyncValue.data(AuthAuthenticated(user));
     } on AuthException catch (e) {
-      state = AsyncValue.data(AuthError(e.message, code: e.code));
+      // Si es una cancelación del usuario, volver al estado anterior sin mostrar error
+      if (e.code == 'SIGN_IN_CANCELLED') {
+        state = const AsyncValue.data(AuthUnauthenticated());
+        // Re-lanzar para que la UI pueda manejar si es necesario
+        rethrow;
+      } else {
+        state = AsyncValue.data(AuthError(e.message, code: e.code));
+      }
     } catch (e) {
       state = AsyncValue.data(AuthError('Error inesperado: $e'));
     }

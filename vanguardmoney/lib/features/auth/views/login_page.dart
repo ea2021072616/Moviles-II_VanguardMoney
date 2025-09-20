@@ -2,10 +2,14 @@
 import "package:flutter_riverpod/flutter_riverpod.dart";
 import "package:go_router/go_router.dart";
 
-import "../../../core/theme/app_colors.dart";
 import "../../../core/constants/app_sizes.dart";
 import "../../../core/constants/app_strings.dart";
 import "../../../core/exceptions/error_handler.dart";
+import "../../../core/exceptions/app_exception.dart";
+import "../constants/auth_constants.dart";
+import "../widgets/auth_text_field.dart";
+import "../widgets/currency_selector.dart";
+import "../widgets/password_strength_indicator.dart";
 import "../viewmodels/auth_provider.dart";
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -22,6 +26,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
 
+  // ValueNotifier para optimizar el performance del indicador de fortaleza
+  final _passwordNotifier = ValueNotifier<String>('');
+
   bool _isLoginMode = true;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -33,6 +40,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _nameController.dispose();
+    _passwordNotifier.dispose();
     super.dispose();
   }
 
@@ -106,9 +114,23 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       if (mounted) {
         context.go("/home");
       }
+    } on AuthException catch (e) {
+      // Manejar específicamente las cancelaciones
+      if (e.code == 'SIGN_IN_CANCELLED') {
+        // No mostrar error para cancelaciones del usuario
+        print('Login con Google cancelado por el usuario');
+        return;
+      }
+
+      // Mostrar otros errores de autenticación
+      _showErrorSnackBar(e.message);
     } catch (error) {
       final errorMessage = ErrorHandler.handleError(error, StackTrace.current);
-      _showErrorSnackBar(errorMessage.message);
+
+      // Solo mostrar error si no es una cancelación del usuario
+      if (!errorMessage.message.contains('cancelado')) {
+        _showErrorSnackBar(errorMessage.message);
+      }
     }
   }
 
@@ -130,13 +152,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Por favor ingresa tu contraseña';
+    try {
+      ErrorHandler.validatePassword(value, isRegistration: !_isLoginMode);
+      return null;
+    } on ValidationException catch (e) {
+      return e.message;
+    } catch (e) {
+      return 'Error de validación';
     }
-    if (value.length < 6) {
-      return 'La contraseña debe tener al menos 6 caracteres';
-    }
-    return null;
   }
 
   String? _validateConfirmPassword(String? value) {
@@ -180,170 +203,34 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     );
   }
 
-  // Fondo geométrico moderno inspirado en la imagen de referencia
+  // Fondo simple y limpio
   Widget _buildGeometricBackground() {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.surface,
-            Theme.of(context).colorScheme.surface.withOpacity(0.98),
-            Theme.of(context).colorScheme.primaryContainer.withOpacity(0.03),
-          ],
-        ),
-      ),
-      child: Stack(
-        children: [
-          // Círculo grande azul - esquina superior izquierda
-          Positioned(
-            top: -100,
-            left: -100,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                    Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                    Theme.of(context).colorScheme.primary.withOpacity(0.01),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Círculo mediano verde - esquina superior derecha
-          Positioned(
-            top: -80,
-            right: -80,
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.secondary.withOpacity(0.12),
-                    Theme.of(context).colorScheme.secondary.withOpacity(0.04),
-                    Theme.of(context).colorScheme.secondary.withOpacity(0.01),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Forma orgánica rosa - centro derecha
-          Positioned(
-            top: 200,
-            right: -60,
-            child: Container(
-              width: 150,
-              height: 150,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(80),
-                  topRight: Radius.circular(20),
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(60),
-                ),
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.tertiary.withOpacity(0.1),
-                    Theme.of(context).colorScheme.tertiary.withOpacity(0.03),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Círculo pequeño amarillo - centro izquierda
-          Positioned(
-            top: 300,
-            left: -40,
-            child: Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.amber.withOpacity(0.08),
-                    Colors.amber.withOpacity(0.02),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Forma triangular coral - esquina inferior derecha
-          Positioned(
-            bottom: -50,
-            right: -50,
-            child: ClipPath(
-              clipper: _TriangleClipper(),
-              child: Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.error.withOpacity(0.08),
-                      Theme.of(context).colorScheme.error.withOpacity(0.02),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Forma ondulada lavanda - esquina inferior izquierda
-          Positioned(
-            bottom: -60,
-            left: -60,
-            child: Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(100),
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(80),
-                ),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer.withOpacity(0.06),
-                    Theme.of(
-                      context,
-                    ).colorScheme.primaryContainer.withOpacity(0.01),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
     );
   }
 
   Widget _buildMainCard() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = AuthResponsive.getCardWidth(screenWidth);
+    final horizontalPadding = AuthResponsive.getHorizontalPadding(screenWidth);
+
     return Container(
-      constraints: const BoxConstraints(maxWidth: 400),
+      constraints: BoxConstraints(maxWidth: cardWidth),
       child: Card(
-        elevation: 25,
+        elevation: AuthConstants.cardElevation,
         shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusXL),
         ),
         child: Container(
-          padding: EdgeInsets.all(AppSizes.spaceXL),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding.clamp(
+              AppSizes.spaceM,
+              AppSizes.spaceXL,
+            ),
+            vertical: AppSizes.spaceXL,
+          ),
           decoration: BoxDecoration(
             // Efecto glassmorphism sutil
             color: Theme.of(context).colorScheme.surface.withOpacity(0.95),
@@ -395,8 +282,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       children: [
         // Logo moderno con gradiente vibrante
         Container(
-          height: 85,
-          width: 85,
+          height: AuthConstants.logoSize,
+          width: AuthConstants.logoSize,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -445,9 +332,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               color: Theme.of(
                 context,
               ).colorScheme.surface, // Requerido para ShaderMask
-              letterSpacing: -1.2,
+              letterSpacing: AuthConstants.titleLetterSpacing,
               height: 1.0,
-              fontSize: 32,
+              fontSize: AuthConstants.titleFontSize,
             ),
           ),
         ),
@@ -461,7 +348,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.70),
             fontWeight: FontWeight.w500,
             letterSpacing: 0.3,
-            fontSize: 16,
+            fontSize: AuthConstants.subtitleFontSize,
             height: 1.4,
           ),
           textAlign: TextAlign.center,
@@ -507,12 +394,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             textInputAction: _isLoginMode
                 ? TextInputAction.done
                 : TextInputAction.next,
+            onChanged: !_isLoginMode
+                ? (value) {
+                    _passwordNotifier.value = value;
+                    setState(() {});
+                  }
+                : null,
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword
                     ? Icons.visibility_outlined
                     : Icons.visibility_off_outlined,
-                color: AppColors.blackGrey.withOpacity(0.5),
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
               ),
               onPressed: () {
                 setState(() {
@@ -524,6 +417,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ),
 
           if (!_isLoginMode) ...[
+            SizedBox(height: AppSizes.spaceS),
+            _buildPasswordStrengthIndicator(),
             SizedBox(height: AppSizes.spaceM),
 
             _buildTextField(
@@ -538,7 +433,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   _obscureConfirmPassword
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
-                  color: AppColors.blackGrey.withOpacity(0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withOpacity(0.5),
                 ),
                 onPressed: () {
                   setState(() {
@@ -567,150 +464,48 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     TextInputAction? textInputAction,
     Widget? suffixIcon,
     void Function(String)? onFieldSubmitted,
+    void Function(String)? onChanged,
   }) {
-    return TextFormField(
+    return AuthTextField(
       controller: controller,
+      label: label,
+      icon: icon,
       validator: validator,
       obscureText: obscureText,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
+      suffixIcon: suffixIcon,
       onFieldSubmitted: onFieldSubmitted,
-      style: TextStyle(
-        color: Theme.of(context).colorScheme.onSurface,
-        fontWeight: FontWeight.w500,
-        fontSize: 16,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(
-          icon,
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-          size: 22,
-        ),
-        suffixIcon: suffixIcon,
-        labelStyle: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-          fontWeight: FontWeight.w400,
-          fontSize: 14,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
-          ),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.error,
-            width: 2,
-          ),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.error,
-            width: 2,
-          ),
-        ),
-        filled: true,
-        fillColor: Theme.of(context).colorScheme.surface,
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: AppSizes.spaceM,
-          vertical: AppSizes.spaceM + 2,
-        ),
-      ),
+      onChanged: onChanged,
+    );
+  }
+
+  Widget _buildPasswordStrengthIndicator() {
+    return ValueListenableBuilder<String>(
+      valueListenable: _passwordNotifier,
+      builder: (context, password, child) {
+        return PasswordStrengthIndicator(password: password);
+      },
     );
   }
 
   Widget _buildCurrencySelector() {
-    final currencies = [
-      {'code': 'S/', 'name': 'Sol Peruano (S/)'},
-      {'code': 'USD', 'name': 'Dólar Americano (USD)'},
-      {'code': 'EUR', 'name': 'Euro (EUR)'},
-      {'code': 'GBP', 'name': 'Libra Esterlina (GBP)'},
-    ];
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.15),
-        ),
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        color: Theme.of(context).colorScheme.surface,
-      ),
-      child: DropdownButtonFormField<String>(
-        value: _selectedCurrency,
-        decoration: InputDecoration(
-          labelText: 'Moneda principal',
-          prefixIcon: Icon(
-            Icons.attach_money_rounded,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-            size: 22,
-          ),
-          labelStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            fontWeight: FontWeight.w400,
-            fontSize: 14,
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: AppSizes.spaceM,
-            vertical: AppSizes.spaceM + 2,
-          ),
-        ),
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontWeight: FontWeight.w500,
-          fontSize: 16,
-        ),
-        dropdownColor: Theme.of(context).colorScheme.surface,
-        items: currencies.map((currency) {
-          return DropdownMenuItem<String>(
-            value: currency['code'],
-            child: Text(
-              currency['name']!,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurface,
-                fontSize: 15,
-              ),
-            ),
-          );
-        }).toList(),
-        onChanged: (String? newValue) {
-          if (newValue != null) {
-            setState(() {
-              _selectedCurrency = newValue;
-            });
-          }
-        },
-        validator: (value) {
-          if (!_isLoginMode && (value == null || value.isEmpty)) {
-            return 'Por favor selecciona una moneda';
-          }
-          return null;
-        },
-      ),
+    return CurrencySelector(
+      selectedCurrency: _selectedCurrency,
+      onChanged: (String? newValue) {
+        if (newValue != null) {
+          setState(() {
+            _selectedCurrency = newValue;
+          });
+        }
+      },
     );
   }
 
   Widget _buildActionButton() {
     return SizedBox(
       width: double.infinity,
-      height: 58,
+      height: AuthConstants.buttonHeight,
       child: ElevatedButton(
         onPressed: isLoading ? null : _submitForm,
         style: ElevatedButton.styleFrom(
@@ -783,30 +578,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       height: 58,
       child: OutlinedButton.icon(
         onPressed: isLoading ? null : _signInWithGoogle,
-        icon: Container(
-          height: 22,
-          width: 22,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [Colors.red, Colors.orange, Colors.yellow, Colors.blue],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Icon(
-            Icons.g_mobiledata_rounded,
-            color: Theme.of(context).colorScheme.onPrimary,
-            size: 18,
-          ),
-        ),
+        icon: Image.asset('assets/google_logo.png', height: 22, width: 22),
         label: Text(AppStrings.continueWithGoogle),
         style: OutlinedButton.styleFrom(
           foregroundColor: Theme.of(context).colorScheme.onSurface,
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-            width: 1.5,
-          ),
+          side: BorderSide(color: Colors.black26, width: 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusM),
           ),
@@ -883,21 +659,4 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   bool get isLoading => ref.watch(authViewModelProvider).isLoading;
-}
-
-// Clipper personalizado para crear formas triangulares
-class _TriangleClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.moveTo(size.width * 0.2, 0);
-    path.lineTo(size.width, size.height * 0.3);
-    path.lineTo(size.width * 0.8, size.height);
-    path.lineTo(0, size.height * 0.7);
-    path.close();
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }
