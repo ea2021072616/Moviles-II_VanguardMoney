@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/form_validators.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/app_sizes.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/exceptions/app_exception.dart';
+import '../../../core/exceptions/error_handler.dart';
 import '../models/edit_profile_model.dart';
 import '../models/user_profile_model.dart';
 import '../viewmodels/edit_profile_provider.dart';
@@ -53,14 +58,57 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     final editProfileState = ref.watch(editProfileProvider);
     final userProfileAsync = ref.watch(currentUserProfileProvider);
 
+    // Escuchar cambios en el estado de edición de perfil
+    ref.listen(editProfileProvider, (previous, next) {
+      if (next.status == EditProfileStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppStrings.successUpdate),
+            backgroundColor: AppColors.greenJade,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+          ),
+        );
+        context.pop(); // Regresar a la página anterior
+      } else if (next.status == EditProfileStatus.error) {
+        // ✅ ERROR HANDLING CENTRALIZADO - Manejo robusto de errores
+        String errorMessage;
+
+        if (next.errorMessage != null) {
+          // Si ya tenemos un mensaje de error, verificar si viene del ErrorHandler
+          errorMessage = next.errorMessage!;
+        } else {
+          // Si no hay mensaje, usar ErrorHandler para generar uno consistente
+          final handledException = ErrorHandler.handleError(
+            Exception('Error desconocido en edición de perfil'),
+            StackTrace.current,
+          );
+          errorMessage = handledException.message;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: AppColors.redCoral,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+          ),
+        );
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Editar Perfil'),
+        title: Text(AppStrings.editProfile),
         elevation: 0,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.blueClassic,
+        foregroundColor: AppColors.white,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back),
           onPressed: () => context.pop(),
         ),
       ),
@@ -71,36 +119,46 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           return _buildForm(context, editProfileState, userProfile);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Error al cargar el perfil',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Por favor, intenta nuevamente',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+        error: (error, stackTrace) {
+          // ✅ ERROR HANDLING CENTRALIZADO - Usar ErrorHandler con AppException
+          AppException handledException;
+
+          if (error is AppException) {
+            // Si ya es una AppException, mantenerla para preservar el tipo específico
+            handledException = error;
+          } else {
+            // Si no, procesarla con ErrorHandler para convertirla a AppException
+            handledException = ErrorHandler.handleError(error, stackTrace);
+          }
+
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: AppColors.redCoral),
+                SizedBox(height: AppSizes.spaceM),
+                Text(
+                  handledException.message, // ✅ Usar mensaje del ErrorHandler
+                  style: Theme.of(context).textTheme.titleLarge,
+                  textAlign: TextAlign.center,
                 ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton.icon(
-                onPressed: () => ref.invalidate(currentUserProfileProvider),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
-              ),
-            ],
-          ),
-        ),
+                SizedBox(height: AppSizes.spaceXS),
+                Text(
+                  AppStrings.errorTryAgain,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                SizedBox(height: AppSizes.spaceXL),
+                ElevatedButton.icon(
+                  onPressed: () => ref.invalidate(currentUserProfileProvider),
+                  icon: Icon(Icons.refresh),
+                  label: Text(AppStrings.retry),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -112,7 +170,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   ) {
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: EdgeInsets.all(AppSizes.spaceXL),
         child: Form(
           key: _formKey,
           child: Column(
@@ -121,22 +179,22 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               // Avatar del usuario
               _buildProfileAvatar(context, userProfile),
 
-              const SizedBox(height: 32),
+              SizedBox(height: AppSizes.spaceXXL),
 
               // Campo de nombre de usuario
               _buildUsernameField(context, editProfileState),
 
-              const SizedBox(height: 20),
+              SizedBox(height: AppSizes.spaceL),
 
               // Selector de moneda
               _buildCurrencySelector(context),
 
-              const SizedBox(height: 20),
+              SizedBox(height: AppSizes.spaceL),
 
               // Información del email (solo lectura)
               _buildEmailField(context, userProfile),
 
-              const SizedBox(height: 32),
+              SizedBox(height: AppSizes.spaceXXL),
 
               // Mostrar errores de validación
               if (editProfileState.validationErrors.isNotEmpty)
@@ -152,13 +210,13 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               // Botón de guardar
               _buildSaveButton(context, editProfileState),
 
-              const SizedBox(height: 16),
+              SizedBox(height: AppSizes.spaceM),
 
               // Botón de cancelar
               _buildCancelButton(context),
 
               // Espaciado adicional al final
-              const SizedBox(height: 24),
+              SizedBox(height: AppSizes.spaceXL),
             ],
           ),
         ),
@@ -176,30 +234,28 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       child: Stack(
         children: [
           CircleAvatar(
-            radius: 60,
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.primary.withOpacity(0.1),
+            radius: AppSizes.fabCenterSize,
+            backgroundColor: AppColors.blueClassic.withOpacity(0.1),
             child: currentUser?.photoUrl != null
                 ? ClipOval(
                     child: Image.network(
                       currentUser!.photoUrl!,
-                      width: 120,
-                      height: 120,
+                      width: AppSizes.balanceCardHeight,
+                      height: AppSizes.balanceCardHeight,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Icon(
                           Icons.person,
-                          size: 60,
-                          color: Theme.of(context).colorScheme.primary,
+                          size: AppSizes.fabCenterSize,
+                          color: AppColors.blueClassic,
                         );
                       },
                     ),
                   )
                 : Icon(
                     Icons.person,
-                    size: 60,
-                    color: Theme.of(context).colorScheme.primary,
+                    size: AppSizes.fabCenterSize,
+                    color: AppColors.blueClassic,
                   ),
           ),
           Positioned(

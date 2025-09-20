@@ -39,6 +39,7 @@ class AppStrings {
   static const String signInHere = 'Inicia sesión aquí';
   static const String continueWithGoogle = 'Continuar con Google';
   static const String registerWithGoogle = 'Registrarse con Google';
+  static const String featureInDevelopment = 'Función en desarrollo';
   static const String logout = 'Cerrar Sesión';
 
   // ========== DASHBOARD / HOME ==========
@@ -137,6 +138,10 @@ class AppStrings {
   static const String successUpdate = 'Actualizado correctamente';
   static const String successDelete = 'Eliminado exitosamente';
   static const String successTransaction = 'Transacción registrada';
+
+  // ========== MENSAJES DE ERROR ==========
+  static const String errorLoadingProfile = 'Error al cargar el perfil';
+  static const String errorTryAgain = 'Por favor, intenta nuevamente';
   static const String successPlan = 'Plan financiero creado';
 
   // ========== MENSAJES DE ERROR ==========
