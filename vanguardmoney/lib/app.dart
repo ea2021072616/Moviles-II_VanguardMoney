@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/routes/app_router.dart';
+import 'core/theme/app_theme.dart';
+import 'core/constants/app_strings.dart';
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -11,19 +13,15 @@ class App extends ConsumerWidget {
 
     return MaterialApp.router(
       routerConfig: router,
-      title: 'Vanguard Money',
+      title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.blue,
-        brightness: Brightness.dark,
-      ),
-      themeMode: ThemeMode.system,
+
+      // 🎨 NUEVO SISTEMA DE THEME CON BRANDING VANGUARDMONEY
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light, // Por ahora solo tema claro
+      // Configuración adicional
+      locale: const Locale('es', 'ES'), // Español
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/edit_profile_model.dart';
 import '../models/user_profile_model.dart';
 import '../services/auth_repository.dart';
+import '../../../core/exceptions/app_exception.dart';
 import 'auth_provider.dart';
 
 /// Provider para obtener el perfil completo del usuario desde Firestore
@@ -108,21 +109,6 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
     return true;
   }
 
-  /// Verificar si el username está disponible
-  Future<bool> checkUsernameAvailability(String username) async {
-    final currentUser = _ref.read(currentUserProvider);
-    if (currentUser == null) return false;
-
-    try {
-      return await _authRepository.isUsernameAvailable(
-        username,
-        currentUser.id,
-      );
-    } catch (e) {
-      return false;
-    }
-  }
-
   /// Guardar los cambios del perfil
   Future<bool> saveProfile() async {
     // Validar primero
@@ -138,72 +124,39 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
       return false;
     }
 
-    // Verificar si el username ha cambiado y está disponible
-    await currentUserProfileAsync.when(
-      data: (userProfile) async {
-        if (userProfile != null &&
-            state.profile.username != userProfile.username) {
-          final isAvailable = await checkUsernameAvailability(
-            state.profile.username,
-          );
-          if (!isAvailable) {
-            state = state.copyWithValidationErrors([
-              'El nombre de usuario ya está en uso',
-            ]);
-            return;
-          }
-        }
-      },
-      loading: () async {},
-      error: (error, stack) async {},
-    );
-
-    // Si hay errores de validación, no continuar
-    if (state.validationErrors.isNotEmpty) {
-      return false;
-    }
-
     state = state.copyWithLoading();
 
     try {
-      // Actualizar perfil en Firestore
-      await _authRepository.updateUserProfile(
-        uid: currentUser.id,
-        username: state.profile.username,
-        currency: state.profile.currency,
-        photoUrl: state.profile.photoUrl,
+      // Obtener el perfil actual para mantener los datos no editables
+      await currentUserProfileAsync.when(
+        data: (userProfile) async {
+          if (userProfile != null) {
+            // Crear un perfil actualizado manteniendo los datos originales
+            final updatedProfile = userProfile.copyWith(
+              username: state.profile.username,
+              currency: state.profile.currency,
+            );
+
+            // Actualizar perfil usando el método correcto del repository
+            await _authRepository.updateUserProfile(updatedProfile);
+
+            // Invalidar el cache del perfil para que se recargue
+            _ref.invalidate(currentUserProfileProvider);
+
+            state = state.copyWithSuccess();
+          } else {
+            state = state.copyWithError('No se pudo cargar el perfil actual');
+          }
+        },
+        loading: () async {
+          state = state.copyWithError('Cargando perfil...');
+        },
+        error: (error, stack) async {
+          state = state.copyWithError('Error al cargar el perfil');
+        },
       );
 
-      // Actualizar displayName en Firebase Auth si es diferente
-      if (state.profile.username != currentUser.displayName) {
-        try {
-          await _authRepository.updateFirebaseDisplayName(
-            state.profile.username,
-          );
-        } catch (e) {
-          // No es crítico si falla la actualización en Firebase Auth
-          print(
-            'Warning: No se pudo actualizar displayName en Firebase Auth: $e',
-          );
-        }
-      }
-
-      // Actualizar photoUrl en Firebase Auth si es diferente
-      if (state.profile.photoUrl != null &&
-          state.profile.photoUrl != currentUser.photoUrl) {
-        try {
-          await _authRepository.updateFirebasePhotoUrl(state.profile.photoUrl!);
-        } catch (e) {
-          // No es crítico si falla la actualización en Firebase Auth
-          print('Warning: No se pudo actualizar photoUrl en Firebase Auth: $e');
-        }
-      }
-
-      // Invalidar el cache del perfil para que se recargue
-      _ref.invalidate(currentUserProfileProvider);
-
-      state = state.copyWithSuccess();
-      return true;
+      return state.status == EditProfileStatus.success;
     } catch (e) {
       String errorMessage = 'Error al actualizar el perfil';
 

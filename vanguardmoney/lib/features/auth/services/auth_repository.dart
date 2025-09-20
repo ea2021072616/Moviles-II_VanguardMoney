@@ -1,23 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
 import '../models/user_profile_model.dart';
-
-/// Excepción personalizada para errores de autenticación
-class AuthException implements Exception {
-  final String message;
-  final String code;
-
-  const AuthException(this.message, this.code);
-
-  @override
-  String toString() => 'AuthException: $message (Code: $code)';
-}
+import '../../../core/exceptions/error_handler.dart';
+import '../../../core/exceptions/app_exception.dart';
 
 /// Repository que encapsula todas las operaciones de autenticación
-/// Permite mockear para pruebas unitarias sin depender de Firebase
+/// Usa el sistema centralizado de error handling (ErrorHandler + AppException)
 class AuthRepository {
   final FirebaseAuth _firebaseAuth;
   final GoogleSignIn _googleSignIn;
@@ -53,9 +43,10 @@ class AuthRepository {
       // Verificar si el usuario está bloqueado por intentos fallidos
       final isBlocked = await isUserBlocked(email);
       if (isBlocked) {
-        throw const AuthException(
-          'Has superado el número de intentos. Intenta de nuevo más tarde',
-          'too-many-attempts',
+        throw AuthException(
+          message:
+              'Has superado el número de intentos. Intenta de nuevo más tarde',
+          code: 'TOO_MANY_ATTEMPTS',
         );
       }
 
@@ -63,22 +54,23 @@ class AuthRepository {
           .signInWithEmailAndPassword(email: email.trim(), password: password);
 
       if (result.user == null) {
-        throw const AuthException('Error al iniciar sesión', 'user-null');
+        throw AuthException(
+          message: 'Error al iniciar sesión',
+          code: 'USER_NULL',
+        );
       }
 
       // Login exitoso - reiniciar intentos fallidos
       await resetLoginAttempts(result.user!.uid);
 
       return UserModel.fromFirebaseUser(result.user!);
-    } on FirebaseAuthException catch (e) {
+    } catch (e, stackTrace) {
       // Incrementar intentos fallidos en ciertos casos
-      if (e.code == 'wrong-password' || e.code == 'user-not-found') {
+      if (e is FirebaseAuthException &&
+          (e.code == 'wrong-password' || e.code == 'user-not-found')) {
         await incrementLoginAttempts(email);
       }
-      throw AuthException(_getAuthErrorMessage(e.code), e.code);
-    } catch (e) {
-      if (e is AuthException) rethrow;
-      throw AuthException('Error inesperado: $e', 'unknown');
+      throw ErrorHandler.handleError(e, stackTrace);
     }
   }
 
@@ -97,7 +89,10 @@ class AuthRepository {
           );
 
       if (result.user == null) {
-        throw const AuthException('Error al crear cuenta', 'user-null');
+        throw AuthException(
+          message: 'Error al crear cuenta',
+          code: 'USER_NULL',
+        );
       }
 
       // Actualizar el displayName en Firebase Auth
@@ -119,10 +114,8 @@ class AuthRepository {
           .set(userProfile.toMap());
 
       return UserModel.fromFirebaseUser(result.user!);
-    } on FirebaseAuthException catch (e) {
-      throw AuthException(_getAuthErrorMessage(e.code), e.code);
-    } catch (e) {
-      throw AuthException('Error inesperado: $e', 'unknown');
+    } catch (e, stackTrace) {
+      throw ErrorHandler.handleError(e, stackTrace);
     }
   }
 
@@ -132,9 +125,9 @@ class AuthRepository {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
-        throw const AuthException(
-          'Inicio de sesión cancelado',
-          'google-signin-cancelled',
+        throw AuthException(
+          message: 'Inicio de sesión cancelado',
+          code: 'SIGN_IN_CANCELLED',
         );
       }
 
@@ -151,317 +144,225 @@ class AuthRepository {
       );
 
       if (result.user == null) {
-        throw const AuthException(
-          'Error al iniciar sesión con Google',
-          'user-null',
+        throw AuthException(
+          message: 'Error al iniciar sesión con Google',
+          code: 'GOOGLE_SIGNIN_FAILED',
         );
       }
 
+      // Crear o actualizar perfil en Firestore si es primera vez
+      await _createOrUpdateUserProfile(result.user!);
+
       return UserModel.fromFirebaseUser(result.user!);
-    } on FirebaseAuthException catch (e) {
-      throw AuthException(_getAuthErrorMessage(e.code), e.code);
-    } on PlatformException catch (e) {
-      // Manejo específico de errores de Google Sign-In
-      switch (e.code) {
-        case 'sign_in_failed':
-          throw const AuthException(
-            'Error de configuración de Google Sign-In. Verifica que los SHA fingerprints estén configurados correctamente en Firebase.',
-            'google-config-error',
-          );
-        case 'network_error':
-          throw const AuthException(
-            'Error de conexión. Verifica tu internet e intenta de nuevo.',
-            'network-error',
-          );
-        case 'sign_in_canceled':
-          throw const AuthException(
-            'Inicio de sesión cancelado por el usuario.',
-            'sign-in-cancelled',
-          );
-        default:
-          throw AuthException('Error de Google Sign-In: ${e.message}', e.code);
-      }
-    } catch (e) {
-      throw AuthException('Error inesperado con Google: $e', 'google-unknown');
+    } catch (e, stackTrace) {
+      throw ErrorHandler.handleError(e, stackTrace);
     }
   }
 
   /// Cerrar sesión
   Future<void> signOut() async {
     try {
-      // Cerrar sesión de Firebase
-      await _firebaseAuth.signOut();
-
-      // Cerrar sesión de Google si está disponible
-      await _googleSignIn.signOut();
-    } catch (e) {
-      throw AuthException('Error al cerrar sesión: $e', 'signout-error');
+      await Future.wait([_firebaseAuth.signOut(), _googleSignIn.signOut()]);
+    } catch (e, stackTrace) {
+      throw ErrorHandler.handleError(e, stackTrace);
     }
   }
 
-  /// Obtener perfil de usuario desde Firestore
-  Future<UserProfileModel?> getUserProfile(String uid) async {
+  /// Obtener perfil del usuario desde Firestore
+  Future<UserProfileModel?> getUserProfile() async {
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
-      if (doc.exists && doc.data() != null) {
-        return UserProfileModel.fromMap(doc.data()!);
-      }
-      return null;
-    } catch (e) {
-      throw AuthException('Error al obtener perfil: $e', 'profile-error');
+      final user = _firebaseAuth.currentUser;
+      if (user == null) return null;
+
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      return doc.exists ? UserProfileModel.fromMap(doc.data()!) : null;
+    } catch (e, stackTrace) {
+      throw ErrorHandler.handleError(e, stackTrace);
     }
   }
+
+  /// Actualizar perfil del usuario
+  Future<void> updateUserProfile(UserProfileModel profile) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw AuthException.userNotFound();
+      }
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .update(profile.toMap());
+
+      // Actualizar displayName en Firebase Auth si cambió
+      if (profile.username != user.displayName) {
+        await user.updateDisplayName(profile.username);
+        await user.reload();
+      }
+    } catch (e, stackTrace) {
+      throw ErrorHandler.handleError(e, stackTrace);
+    }
+  }
+
+  /// Cambiar contraseña
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw AuthException.userNotFound();
+      }
+
+      // Re-autenticar al usuario
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+      await user.reauthenticateWithCredential(credential);
+
+      // Cambiar contraseña
+      await user.updatePassword(newPassword);
+    } catch (e, stackTrace) {
+      throw ErrorHandler.handleError(e, stackTrace);
+    }
+  }
+
+  /// Enviar email de recuperación de contraseña
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
+    } catch (e, stackTrace) {
+      throw ErrorHandler.handleError(e, stackTrace);
+    }
+  }
+
+  /// Eliminar cuenta
+  Future<void> deleteAccount(String password) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw AuthException.userNotFound();
+      }
+
+      // Re-autenticar antes de eliminar
+      if (user.email != null) {
+        final credential = EmailAuthProvider.credential(
+          email: user.email!,
+          password: password,
+        );
+        await user.reauthenticateWithCredential(credential);
+      }
+
+      // Eliminar datos de Firestore
+      await _firestore.collection('users').doc(user.uid).delete();
+
+      // Eliminar cuenta de Firebase Auth
+      await user.delete();
+    } catch (e, stackTrace) {
+      throw ErrorHandler.handleError(e, stackTrace);
+    }
+  }
+
+  // ========== MÉTODOS AUXILIARES ==========
+
+  /// Crear o actualizar perfil de usuario en Firestore
+  Future<void> _createOrUpdateUserProfile(User user) async {
+    try {
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+      if (!userDoc.exists) {
+        // Crear nuevo perfil
+        final profile = UserProfileModel.fromFirebaseUser(
+          uid: user.uid,
+          email: user.email ?? '',
+          username: user.displayName ?? 'Usuario',
+          currency: 'USD', // Valor por defecto
+          verified: user.emailVerified,
+        );
+
+        await _firestore.collection('users').doc(user.uid).set(profile.toMap());
+      } else {
+        // Actualizar información básica
+        await _firestore.collection('users').doc(user.uid).update({
+          'email': user.email,
+          'username': user.displayName ?? userDoc.data()!['username'],
+          'verified': user.emailVerified,
+          'lastLogin': FieldValue.serverTimestamp(),
+        });
+      }
+    } catch (e, stackTrace) {
+      // No lanzar error aquí para no bloquear el login
+      ErrorHandler.logError(ErrorHandler.handleError(e, stackTrace));
+    }
+  }
+
+  // ========== CONTROL DE INTENTOS FALLIDOS ==========
 
   /// Incrementar intentos fallidos de login
   Future<void> incrementLoginAttempts(String email) async {
     try {
-      // Buscar usuario por email
-      final querySnapshot = await _firestore
-          .collection('users')
-          .where('email', isEqualTo: email.trim())
-          .limit(1)
+      final attemptDoc = await _firestore
+          .collection('login_attempts')
+          .doc(email.toLowerCase())
           .get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        final doc = querySnapshot.docs.first;
-        final currentData = doc.data();
-        final currentAttempts = currentData['loginAttempts'] ?? 0;
-
-        await doc.reference.update({
-          'loginAttempts': currentAttempts + 1,
-          'lastAttempt': Timestamp.now(),
+      if (attemptDoc.exists) {
+        final data = attemptDoc.data()!;
+        final attempts = (data['attempts'] as int? ?? 0) + 1;
+        await attemptDoc.reference.update({
+          'attempts': attempts,
+          'lastAttempt': FieldValue.serverTimestamp(),
         });
+      } else {
+        await _firestore
+            .collection('login_attempts')
+            .doc(email.toLowerCase())
+            .set({'attempts': 1, 'lastAttempt': FieldValue.serverTimestamp()});
       }
     } catch (e) {
-      // No lanzar error aquí para no interrumpir el flujo de login
-      print('Error al incrementar intentos: $e');
-    }
-  }
-
-  /// Reiniciar intentos fallidos (al login exitoso)
-  Future<void> resetLoginAttempts(String uid) async {
-    try {
-      await _firestore.collection('users').doc(uid).update({
-        'loginAttempts': 0,
-        'lastAttempt': null,
-      });
-    } catch (e) {
-      // No lanzar error aquí para no interrumpir el flujo de login
-      print('Error al reiniciar intentos: $e');
+      // No bloquear el proceso si falla el tracking
+      print('Error tracking login attempts: $e');
     }
   }
 
   /// Verificar si el usuario está bloqueado por intentos fallidos
   Future<bool> isUserBlocked(String email) async {
     try {
-      final querySnapshot = await _firestore
-          .collection('users')
-          .where('email', isEqualTo: email.trim())
-          .limit(1)
+      final attemptDoc = await _firestore
+          .collection('login_attempts')
+          .doc(email.toLowerCase())
           .get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        final userData = querySnapshot.docs.first.data();
-        final profile = UserProfileModel.fromMap(userData);
-        return profile.isBlocked;
+      if (!attemptDoc.exists) return false;
+
+      final data = attemptDoc.data()!;
+      final attempts = data['attempts'] as int? ?? 0;
+      final lastAttempt = data['lastAttempt'] as Timestamp?;
+
+      if (attempts >= 5 && lastAttempt != null) {
+        final timeDiff = DateTime.now().difference(lastAttempt.toDate());
+        return timeDiff.inMinutes < 15; // Bloqueo por 15 minutos
       }
+
       return false;
     } catch (e) {
-      return false; // En caso de error, permitir el intento
-    }
-  }
-
-  /// Enviar email para resetear contraseña
-  Future<void> sendPasswordResetEmail(String email) async {
-    try {
-      await _firebaseAuth.sendPasswordResetEmail(email: email.trim());
-    } on FirebaseAuthException catch (e) {
-      throw AuthException(_getAuthErrorMessage(e.code), e.code);
-    } catch (e) {
-      throw AuthException('Error inesperado: $e', 'unknown');
-    }
-  }
-
-  /// Reautenticar usuario (para operaciones sensibles)
-  Future<void> reauthenticateWithEmail(String password) async {
-    try {
-      final user = _firebaseAuth.currentUser;
-      if (user?.email == null) {
-        throw const AuthException('Usuario no encontrado', 'user-not-found');
-      }
-
-      final credential = EmailAuthProvider.credential(
-        email: user!.email!,
-        password: password,
-      );
-
-      await user.reauthenticateWithCredential(credential);
-    } on FirebaseAuthException catch (e) {
-      throw AuthException(_getAuthErrorMessage(e.code), e.code);
-    } catch (e) {
-      throw AuthException('Error inesperado: $e', 'unknown');
-    }
-  }
-
-  /// Cambiar contraseña
-  Future<void> changePassword(String newPassword) async {
-    try {
-      final user = _firebaseAuth.currentUser;
-      if (user == null) {
-        throw const AuthException('Usuario no encontrado', 'user-not-found');
-      }
-
-      await user.updatePassword(newPassword);
-    } on FirebaseAuthException catch (e) {
-      throw AuthException(_getAuthErrorMessage(e.code), e.code);
-    } catch (e) {
-      throw AuthException('Error inesperado: $e', 'unknown');
-    }
-  }
-
-  /// Eliminar cuenta
-  Future<void> deleteAccount() async {
-    try {
-      final user = _firebaseAuth.currentUser;
-      if (user == null) {
-        throw const AuthException('Usuario no encontrado', 'user-not-found');
-      }
-
-      await user.delete();
-    } on FirebaseAuthException catch (e) {
-      throw AuthException(_getAuthErrorMessage(e.code), e.code);
-    } catch (e) {
-      throw AuthException('Error inesperado: $e', 'unknown');
-    }
-  }
-
-  /// Actualizar perfil del usuario en Firestore
-  Future<UserProfileModel> updateUserProfile({
-    required String uid,
-    String? username,
-    String? currency,
-    String? photoUrl,
-  }) async {
-    try {
-      final docRef = _firestore.collection('users').doc(uid);
-
-      // Preparar datos para actualizar
-      final Map<String, dynamic> updateData = {};
-
-      if (username != null && username.isNotEmpty) {
-        updateData['username'] = username.trim();
-      }
-
-      if (currency != null && currency.isNotEmpty) {
-        updateData['currency'] = currency;
-      }
-
-      if (photoUrl != null) {
-        updateData['photoUrl'] = photoUrl;
-      }
-
-      // Solo actualizar si hay datos para cambiar
-      if (updateData.isNotEmpty) {
-        await docRef.update(updateData);
-      }
-
-      // Obtener el perfil actualizado
-      final updatedDoc = await docRef.get();
-      if (!updatedDoc.exists) {
-        throw const AuthException(
-          'Perfil de usuario no encontrado',
-          'profile-not-found',
-        );
-      }
-
-      return UserProfileModel.fromMap(updatedDoc.data()!);
-    } on FirebaseException catch (e) {
-      throw AuthException('Error al actualizar perfil: ${e.message}', e.code);
-    } catch (e) {
-      throw AuthException(
-        'Error inesperado al actualizar perfil: $e',
-        'unknown',
-      );
-    }
-  }
-
-  /// Actualizar el displayName en Firebase Auth (opcional)
-  Future<void> updateFirebaseDisplayName(String displayName) async {
-    try {
-      final user = _firebaseAuth.currentUser;
-      if (user == null) {
-        throw const AuthException('Usuario no encontrado', 'user-not-found');
-      }
-
-      await user.updateDisplayName(displayName);
-    } on FirebaseAuthException catch (e) {
-      throw AuthException(_getAuthErrorMessage(e.code), e.code);
-    } catch (e) {
-      throw AuthException('Error inesperado: $e', 'unknown');
-    }
-  }
-
-  /// Actualizar foto de perfil en Firebase Auth (opcional)
-  Future<void> updateFirebasePhotoUrl(String photoUrl) async {
-    try {
-      final user = _firebaseAuth.currentUser;
-      if (user == null) {
-        throw const AuthException('Usuario no encontrado', 'user-not-found');
-      }
-
-      await user.updatePhotoURL(photoUrl);
-    } on FirebaseAuthException catch (e) {
-      throw AuthException(_getAuthErrorMessage(e.code), e.code);
-    } catch (e) {
-      throw AuthException('Error inesperado: $e', 'unknown');
-    }
-  }
-
-  /// Verificar si un username ya existe (para validación)
-  Future<bool> isUsernameAvailable(String username, String currentUid) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection('users')
-          .where('username', isEqualTo: username.trim())
-          .get();
-
-      // Si no hay documentos, el username está disponible
-      if (querySnapshot.docs.isEmpty) {
-        return true;
-      }
-
-      // Si el único documento es del usuario actual, está disponible
-      return querySnapshot.docs.length == 1 &&
-          querySnapshot.docs.first.id == currentUid;
-    } catch (e) {
-      // En caso de error, asumir que no está disponible por seguridad
+      // En caso de error, no bloquear al usuario
       return false;
     }
   }
 
-  /// Obtener mensajes de error localizados
-  String _getAuthErrorMessage(String code) {
-    switch (code) {
-      case 'weak-password':
-        return 'La contraseña es muy débil. Debe tener al menos 6 caracteres.';
-      case 'email-already-in-use':
-        return 'Ya existe una cuenta con este email.';
-      case 'user-not-found':
-        return 'No se encontró ninguna cuenta con este email.';
-      case 'wrong-password':
-        return 'Contraseña incorrecta.';
-      case 'invalid-email':
-        return 'El formato del email es inválido.';
-      case 'user-disabled':
-        return 'Esta cuenta ha sido deshabilitada.';
-      case 'too-many-requests':
-        return 'Demasiados intentos fallidos. Intenta más tarde.';
-      case 'requires-recent-login':
-        return 'Esta operación requiere autenticación reciente.';
-      case 'network-request-failed':
-        return 'Error de conexión. Verifica tu internet.';
-      default:
-        return 'Error de autenticación: $code';
+  /// Reiniciar intentos fallidos de login
+  Future<void> resetLoginAttempts(String identifier) async {
+    try {
+      await _firestore
+          .collection('login_attempts')
+          .doc(identifier.toLowerCase())
+          .delete();
+    } catch (e) {
+      // No es crítico si falla
+      print('Error resetting login attempts: $e');
     }
   }
 }

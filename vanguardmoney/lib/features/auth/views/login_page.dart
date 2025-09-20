@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../viewmodels/auth_provider.dart';
 import '../models/user_profile_model.dart';
 import '../../../core/utils/form_validators.dart';
+import '../../../core/constants/app_strings.dart';
+import '../../../core/constants/app_sizes.dart';
+import '../../../core/theme/app_colors.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -35,7 +38,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
   void _setupAnimations() {
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: Duration(milliseconds: AppSizes.animationSlow),
       vsync: this,
     );
 
@@ -96,8 +99,11 @@ class _LoginPageState extends ConsumerState<LoginPage>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.redCoral,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
       ),
     );
   }
@@ -106,8 +112,11 @@ class _LoginPageState extends ConsumerState<LoginPage>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green,
+        backgroundColor: AppColors.greenJade,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
       ),
     );
   }
@@ -119,7 +128,9 @@ class _LoginPageState extends ConsumerState<LoginPage>
       next.whenData((authState) {
         switch (authState) {
           case AuthAuthenticated(:final user):
-            _showSuccessSnackBar('¡Bienvenido, ${user.preferredName}!');
+            _showSuccessSnackBar(
+              '${AppStrings.welcomeBack}, ${user.preferredName}!',
+            );
             context.go('/home');
             break;
           case AuthError(:final message):
@@ -141,24 +152,24 @@ class _LoginPageState extends ConsumerState<LoginPage>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.8),
-              Theme.of(context).colorScheme.secondary.withOpacity(0.6),
+              AppColors.blueClassic.withOpacity(0.8),
+              AppColors.blueLavender.withOpacity(0.6),
             ],
           ),
         ),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(AppSizes.spaceL),
               child: FadeTransition(
                 opacity: _fadeAnimation,
                 child: Card(
                   elevation: 8,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusL),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(24.0),
+                    padding: EdgeInsets.all(AppSizes.spaceL),
                     child: Form(
                       key: _formKey,
                       child: Column(
@@ -168,22 +179,22 @@ class _LoginPageState extends ConsumerState<LoginPage>
                           Icon(
                             Icons.trending_up,
                             size: 64,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: AppColors.blueClassic,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: AppSizes.spaceM),
                           Text(
-                            'Vanguard Money',
+                            AppStrings.appName,
                             style: Theme.of(context).textTheme.headlineMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
+                                  color: AppColors.blueClassic,
                                 ),
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: AppSizes.spaceS),
                           Text(
                             _isLoginMode
-                                ? 'Inicia sesión en tu cuenta'
-                                : 'Crea tu nueva cuenta',
+                                ? AppStrings.loginSubtitle
+                                : AppStrings.registerSubtitle,
                             style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(
                                   color: Theme.of(
@@ -191,27 +202,27 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   ).colorScheme.onSurfaceVariant,
                                 ),
                           ),
-                          const SizedBox(height: 32),
+                          SizedBox(height: AppSizes.spaceXL),
 
                           // Campo de nombre (solo para registro)
                           if (!_isLoginMode) ...[
                             TextFormField(
                               controller: _nameController,
-                              decoration: const InputDecoration(
-                                labelText: 'Nombre / Alias',
+                              decoration: InputDecoration(
+                                labelText: AppStrings.nameLabel,
                                 prefixIcon: Icon(Icons.person_outline),
                                 border: OutlineInputBorder(),
-                                hintText: 'Ej: Juan Pérez',
+                                hintText: AppStrings.nameHint,
                               ),
                               validator: FormValidators.validateUsername,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: AppSizes.spaceM),
 
                             // Campo de moneda
                             DropdownButtonFormField<String>(
                               value: _selectedCurrency,
-                              decoration: const InputDecoration(
-                                labelText: 'Moneda principal',
+                              decoration: InputDecoration(
+                                labelText: AppStrings.currency,
                                 prefixIcon: Icon(
                                   Icons.monetization_on_outlined,
                                 ),
@@ -235,29 +246,29 @@ class _LoginPageState extends ConsumerState<LoginPage>
                               },
                               validator: FormValidators.validateCurrency,
                             ),
-                            const SizedBox(height: 16),
+                            SizedBox(height: AppSizes.spaceM),
                           ],
 
                           // Campo de email
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
-                              labelText: 'Email',
+                            decoration: InputDecoration(
+                              labelText: AppStrings.emailLabel,
                               prefixIcon: Icon(Icons.email_outlined),
                               border: OutlineInputBorder(),
                             ),
                             validator: FormValidators.validateEmail,
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: AppSizes.spaceM),
 
                           // Campo de contraseña
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             decoration: InputDecoration(
-                              labelText: 'Contraseña',
-                              prefixIcon: const Icon(Icons.lock_outline),
+                              labelText: AppStrings.passwordLabel,
+                              prefixIcon: Icon(Icons.lock_outline),
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword
@@ -270,16 +281,16 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                   });
                                 },
                               ),
-                              border: const OutlineInputBorder(),
+                              border: OutlineInputBorder(),
                               helperText: _isLoginMode
                                   ? null
-                                  : 'Mín. 8 caracteres, 1 mayúscula, 1 número',
+                                  : AppStrings.passwordHint,
                               helperMaxLines: 2,
                             ),
                             validator: _isLoginMode
                                 ? (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Por favor ingresa tu contraseña';
+                                      return AppStrings.validationRequired;
                                     }
                                     return null;
                                   }
@@ -288,13 +299,13 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
                           // Campo de confirmar contraseña (solo para registro)
                           if (!_isLoginMode) ...[
-                            const SizedBox(height: 16),
+                            SizedBox(height: AppSizes.spaceM),
                             TextFormField(
                               controller: _confirmPasswordController,
                               obscureText: _obscureConfirmPassword,
                               decoration: InputDecoration(
-                                labelText: 'Confirmar contraseña',
-                                prefixIcon: const Icon(Icons.lock_outline),
+                                labelText: AppStrings.confirmPasswordLabel,
+                                prefixIcon: Icon(Icons.lock_outline),
                                 suffixIcon: IconButton(
                                   icon: Icon(
                                     _obscureConfirmPassword
@@ -308,7 +319,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                     });
                                   },
                                 ),
-                                border: const OutlineInputBorder(),
+                                border: OutlineInputBorder(),
                               ),
                               validator: (value) =>
                                   FormValidators.validateConfirmPassword(
@@ -318,7 +329,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             ),
                           ],
 
-                          const SizedBox(height: 24),
+                          SizedBox(height: AppSizes.spaceXL),
 
                           // Botón principal (Login/Registro)
                           SizedBox(
@@ -328,11 +339,13 @@ class _LoginPageState extends ConsumerState<LoginPage>
                               onPressed: isLoading ? null : _handleEmailAuth,
                               style: ElevatedButton.styleFrom(
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusS,
+                                  ),
                                 ),
                               ),
                               child: isLoading
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
@@ -341,21 +354,21 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                     )
                                   : Text(
                                       _isLoginMode
-                                          ? 'Iniciar Sesión'
-                                          : 'Crear Cuenta',
-                                      style: const TextStyle(fontSize: 16),
+                                          ? AppStrings.loginButton
+                                          : AppStrings.registerButton,
+                                      style: TextStyle(fontSize: 16),
                                     ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: AppSizes.spaceM),
 
                           // Divider
                           Row(
                             children: [
-                              const Expanded(child: Divider()),
+                              Expanded(child: Divider()),
                               Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: AppSizes.spaceM,
                                 ),
                                 child: Text(
                                   'o',
@@ -367,10 +380,10 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                       ),
                                 ),
                               ),
-                              const Expanded(child: Divider()),
+                              Expanded(child: Divider()),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: AppSizes.spaceM),
 
                           // Botón de Google
                           SizedBox(
@@ -380,19 +393,21 @@ class _LoginPageState extends ConsumerState<LoginPage>
                               onPressed: isLoading ? null : _handleGoogleAuth,
                               style: OutlinedButton.styleFrom(
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(
+                                    AppSizes.radiusS,
+                                  ),
                                 ),
                               ),
-                              icon: const Icon(Icons.account_circle, size: 24),
+                              icon: Icon(Icons.account_circle, size: 24),
                               label: Text(
                                 _isLoginMode
-                                    ? 'Continuar con Google'
-                                    : 'Registrarse con Google',
-                                style: const TextStyle(fontSize: 16),
+                                    ? AppStrings.continueWithGoogle
+                                    : AppStrings.registerWithGoogle,
+                                style: TextStyle(fontSize: 16),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: AppSizes.spaceXL),
 
                           // Toggle entre login y registro
                           Row(
@@ -400,19 +415,19 @@ class _LoginPageState extends ConsumerState<LoginPage>
                             children: [
                               Text(
                                 _isLoginMode
-                                    ? '¿No tienes cuenta? '
-                                    : '¿Ya tienes cuenta? ',
+                                    ? AppStrings.noAccount + ' '
+                                    : AppStrings.hasAccount + ' ',
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
                               TextButton(
                                 onPressed: isLoading ? null : _toggleMode,
                                 child: Text(
-                                  _isLoginMode ? 'Regístrate' : 'Inicia sesión',
+                                  _isLoginMode
+                                      ? AppStrings.createAccount
+                                      : AppStrings.signInHere,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
+                                    color: AppColors.blueClassic,
                                   ),
                                 ),
                               ),
@@ -421,7 +436,7 @@ class _LoginPageState extends ConsumerState<LoginPage>
 
                           // Olvidé mi contraseña (solo en modo login)
                           if (_isLoginMode) ...[
-                            const SizedBox(height: 8),
+                            SizedBox(height: AppSizes.spaceXS),
                             TextButton(
                               onPressed: isLoading
                                   ? null
@@ -432,10 +447,8 @@ class _LoginPageState extends ConsumerState<LoginPage>
                                       );
                                     },
                               child: Text(
-                                '¿Olvidaste tu contraseña?',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.outline,
-                                ),
+                                AppStrings.forgotPassword,
+                                style: TextStyle(color: AppColors.blueClassic),
                               ),
                             ),
                           ],

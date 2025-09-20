@@ -7,6 +7,7 @@ import 'tabs/transacciones_tab_page.dart';
 import 'tabs/reportes_tab_page.dart';
 import 'tabs/analysis_tab_page.dart';
 import 'widgets/profile_drawer.dart';
+import '../../../core/constants/app_strings.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -17,12 +18,13 @@ class HomePage extends ConsumerWidget {
     final homeViewModel = ref.read(homeViewModelProvider.notifier);
 
     // Lista de páginas para IndexedStack - PATRÓN CONSISTENTE DE TABS
+    // Reordenadas para poner Análisis IA en el centro (posición 2)
     final pages = [
       const HomeTabPage(), // ✅ REAL: Dashboard implementado
       const PlanesTabPage(), // ❌ PLACEHOLDER: Tab con contenido temporal
+      const AnalysisTabPage(), // ✅ REAL: Tab de análisis IA - CENTRO
       const TransaccionesTabPage(), // ✅ REAL: Tab que llama a TransaccionesView
       const ReportesTabPage(), // ❌ PLACEHOLDER: Tab con contenido temporal
-      const AnalysisTabPage(), // ✅ REAL: Tab de análisis IA
     ];
 
     return Scaffold(
@@ -49,38 +51,237 @@ class HomePage extends ConsumerWidget {
       ),
       drawer: const ProfileDrawer(),
       body: IndexedStack(index: currentTab.tabIndex, children: pages),
-      bottomNavigationBar: _buildBottomNavigationBar(
+      bottomNavigationBar: _buildCustomBottomNavigationBar(
         context,
         ref,
         currentTab.tabIndex,
       ),
+      floatingActionButton: _buildAICenterButton(
+        context,
+        ref,
+        currentTab.tabIndex,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
-  Widget _buildBottomNavigationBar(
+  // Botón flotante central para Análisis IA - Diseño innovador
+  Widget _buildAICenterButton(
     BuildContext context,
     WidgetRef ref,
     int currentIndex,
   ) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: (index) {
-        ref.read(homeViewModelProvider.notifier).navigateToIndex(index);
-      },
-      type: BottomNavigationBarType.fixed,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-        BottomNavigationBarItem(icon: Icon(Icons.timeline), label: 'Planes'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.add_circle_outline),
-          label: 'Transacciones',
+    final isAISelected =
+        currentIndex == 2; // Análisis IA ahora está en posición 2
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: isAISelected ? 60 : 56,
+      width: isAISelected ? 60 : 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isAISelected
+              ? [
+                  const Color(0xFF6A11CB), // Púrpura vibrante
+                  const Color(0xFF2575FC), // Azul eléctrico
+                ]
+              : [
+                  const Color(0xFF667eea), // Azul suave
+                  const Color(0xFFf093fb), // Rosa suave
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Reportes'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.psychology),
-          label: 'Análisis IA',
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: isAISelected
+                ? const Color(0xFF6A11CB).withOpacity(0.4)
+                : const Color(0xFF667eea).withOpacity(0.3),
+            blurRadius: isAISelected ? 15 : 10,
+            offset: const Offset(0, 5),
+            spreadRadius: isAISelected ? 2 : 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            ref.read(homeViewModelProvider.notifier).navigateToIndex(2);
+          },
+          borderRadius: BorderRadius.circular(30),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.psychology_alt,
+                    size: isAISelected ? 28 : 24,
+                    color: Colors.white,
+                  ),
+                  if (isAISelected) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      AppStrings.navAnalysisIA,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
         ),
-      ],
+      ),
+    );
+  }
+
+  // Barra de navegación personalizada sin el botón central
+  Widget _buildCustomBottomNavigationBar(
+    BuildContext context,
+    WidgetRef ref,
+    int currentIndex,
+  ) {
+    return BottomAppBar(
+      shape: const CircularNotchedRectangle(),
+      notchMargin: 8.0,
+      elevation: 8,
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.grey.shade50],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildNavItem(
+                context,
+                ref,
+                0,
+                Icons.home,
+                AppStrings.navHome,
+                currentIndex,
+              ),
+            ),
+            Expanded(
+              child: _buildNavItem(
+                context,
+                ref,
+                1,
+                Icons.timeline,
+                AppStrings.navPlanes,
+                currentIndex,
+              ),
+            ),
+            const SizedBox(width: 40), // Espacio para el FAB central
+            Expanded(
+              child: _buildNavItem(
+                context,
+                ref,
+                3,
+                Icons.add_circle_outline,
+                AppStrings.navTransactions,
+                currentIndex,
+              ),
+            ),
+            Expanded(
+              child: _buildNavItem(
+                context,
+                ref,
+                4,
+                Icons.bar_chart,
+                AppStrings.navReports,
+                currentIndex,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget individual para cada item de navegación - Diseño mejorado sin overflow
+  Widget _buildNavItem(
+    BuildContext context,
+    WidgetRef ref,
+    int index,
+    IconData icon,
+    String label,
+    int currentIndex,
+  ) {
+    final isSelected = currentIndex == index;
+    final theme = Theme.of(context);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            ref.read(homeViewModelProvider.notifier).navigateToIndex(index);
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? theme.colorScheme.primary.withOpacity(0.1)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : Colors.grey.shade600,
+                    size: isSelected ? 22 : 20,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : Colors.grey.shade600,
+                      fontSize: 10,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -1,12 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Estados posibles para la navegación en el Home
+/// NOTA: Análisis IA ahora está en el centro (posición 2) para mayor prominencia
 enum HomeNavigationTab {
   home(0, 'Inicio'),
   financialPlans(1, 'Planes'),
-  transactions(2, 'Transacciones'),
-  reports(3, 'Reportes'),
-  analysis(4, 'Análisis IA');
+  analysis(2, 'Análisis IA'), // ✨ CENTRO - Característica innovadora
+  transactions(3, 'Registro'),
+  reports(4, 'Reportes');
 
   const HomeNavigationTab(this.tabIndex, this.title);
   final int tabIndex;
