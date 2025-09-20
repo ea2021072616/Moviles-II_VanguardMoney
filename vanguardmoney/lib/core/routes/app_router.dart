@@ -2,7 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/views/login_page.dart';
 import '../../features/auth/views/edit_profile_page.dart';
-import '../../features/home/views/home_page.dart';
+import '../../features/layout/views/main_layout.dart';
 import '../../features/analysis/views/ai_analysis_page.dart';
 import '../widgets/splash_screen.dart';
 
@@ -29,7 +29,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         name: 'home',
-        builder: (context, state) => const HomePage(),
+        builder: (context, state) => const MainLayout(),
       ),
 
       // Ruta para editar perfil

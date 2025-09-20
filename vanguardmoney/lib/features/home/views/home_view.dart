@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/viewmodels/auth_provider.dart';
+import '../../auth/viewmodels/auth_provider.dart';
 
-class HomeTabPage extends ConsumerWidget {
-  const HomeTabPage({super.key});
+// VISTA ESPECÍFICA DEL HOME - Dashboard principal
+class HomeView extends ConsumerWidget {
+  const HomeView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

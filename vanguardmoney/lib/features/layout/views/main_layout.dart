@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../viewmodels/home_viewmodel.dart';
+import '../viewmodels/layout_viewmodel.dart';
 import 'tabs/home_tab_page.dart';
 import 'tabs/planes_tab_page.dart';
 import 'tabs/transacciones_tab_page.dart';
@@ -9,18 +9,18 @@ import 'tabs/analysis_tab_page.dart';
 import 'widgets/profile_drawer.dart';
 import '../../../core/constants/app_strings.dart';
 
-class HomePage extends ConsumerWidget {
-  const HomePage({super.key});
+// LAYOUT PRINCIPAL - Solo contiene la estructura de navegación
+class MainLayout extends ConsumerWidget {
+  const MainLayout({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentTab = ref.watch(homeViewModelProvider);
-    final homeViewModel = ref.read(homeViewModelProvider.notifier);
+    final currentTab = ref.watch(layoutViewModelProvider);
 
     // Lista de páginas para IndexedStack - PATRÓN CONSISTENTE DE TABS
     // Reordenadas para poner Análisis IA en el centro (posición 2)
     final pages = [
-      const HomeTabPage(), // ✅ REAL: Dashboard implementado
+      const HomeTabPage(), // ✅ REAL: Tab que llama a HomeView
       const PlanesTabPage(), // ❌ PLACEHOLDER: Tab con contenido temporal
       const AnalysisTabPage(), // ✅ REAL: Tab de análisis IA - CENTRO
       const TransaccionesTabPage(), // ✅ REAL: Tab que llama a TransaccionesView
@@ -29,7 +29,7 @@ class HomePage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(homeViewModel.appBarTitle),
+        title: Text(currentTab.title),
         centerTitle: true,
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
@@ -108,7 +108,7 @@ class HomePage extends ConsumerWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            ref.read(homeViewModelProvider.notifier).navigateToIndex(2);
+            ref.read(layoutViewModelProvider.notifier).navigateToIndex(2);
           },
           borderRadius: BorderRadius.circular(30),
           child: Container(
@@ -234,7 +234,7 @@ class HomePage extends ConsumerWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            ref.read(homeViewModelProvider.notifier).navigateToIndex(index);
+            ref.read(layoutViewModelProvider.notifier).navigateToIndex(index);
           },
           borderRadius: BorderRadius.circular(12),
           child: Container(
