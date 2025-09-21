@@ -64,11 +64,23 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       if (next.status == EditProfileStatus.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppStrings.successUpdate),
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: AppColors.white),
+                SizedBox(width: AppSizes.spaceXS),
+                Text('Perfil actualizado exitosamente'),
+              ],
+            ),
             backgroundColor: AppColors.greenJade,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: AppColors.white,
+              onPressed: () =>
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar(),
             ),
           ),
         );
@@ -91,11 +103,22 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(errorMessage),
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: AppColors.white),
+                SizedBox(width: AppSizes.spaceXS),
+                Expanded(child: Text(errorMessage)),
+              ],
+            ),
             backgroundColor: AppColors.redCoral,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            action: SnackBarAction(
+              label: 'Reintentar',
+              textColor: AppColors.white,
+              onPressed: () => _handleSave(),
             ),
           ),
         );
@@ -103,13 +126,21 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     });
 
     return Scaffold(
+      backgroundColor: AppColors.white,
       appBar: AppBar(
-        title: Text(AppStrings.editProfile),
-        elevation: 0,
+        title: Text(
+          AppStrings.editProfile,
+          style: TextStyle(
+            color: AppColors.white,
+            fontSize: AppSizes.fontSizeTitleM,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        elevation: AppSizes.elevationLow,
         backgroundColor: AppColors.blueClassic,
         foregroundColor: AppColors.white,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => context.pop(),
         ),
       ),
@@ -340,13 +371,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             return DropdownMenuItem<String>(
               value: currency['code'],
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     currency['code']!,
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
+                  Flexible(
                     child: Text(
                       currency['name']!,
                       overflow: TextOverflow.ellipsis,
@@ -493,23 +525,29 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     return ElevatedButton(
       onPressed: isLoading ? null : _handleSave,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: AppColors.blueClassic,
+        foregroundColor: AppColors.white,
+        padding: EdgeInsets.symmetric(vertical: AppSizes.spaceM),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
+        elevation: AppSizes.elevationMedium,
       ),
       child: isLoading
-          ? const SizedBox(
+          ? SizedBox(
               height: 20,
               width: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                color: AppColors.white,
               ),
             )
-          : const Text(
+          : Text(
               'Guardar Cambios',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: AppSizes.fontSizeM,
+                fontWeight: FontWeight.w600,
+              ),
             ),
     );
   }
@@ -518,12 +556,19 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     return OutlinedButton(
       onPressed: () => context.pop(),
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        padding: EdgeInsets.symmetric(vertical: AppSizes.spaceM),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        ),
+        side: BorderSide(color: AppColors.greyDark),
       ),
-      child: const Text(
+      child: Text(
         'Cancelar',
-        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: AppSizes.fontSizeM,
+          fontWeight: FontWeight.w600,
+          color: AppColors.greyDark,
+        ),
       ),
     );
   }

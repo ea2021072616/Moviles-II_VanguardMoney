@@ -34,7 +34,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Ruta para editar perfil
       GoRoute(
-        path: '/edit-profile',
+        path: '/profile/edit',
         name: 'editProfile',
         builder: (context, state) => const EditProfilePage(),
       ),

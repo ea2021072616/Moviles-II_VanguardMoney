@@ -16,7 +16,7 @@ class EditProfileModel {
     return EditProfileModel(
       username: userProfile?.username ?? '',
       currency: userProfile?.currency ?? 'S/',
-      photoUrl: userProfile?.photoUrl,
+      photoUrl: null, // UserProfileModel no tiene photoUrl
     );
   }
 
