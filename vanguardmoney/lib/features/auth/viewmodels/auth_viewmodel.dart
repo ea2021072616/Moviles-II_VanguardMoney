@@ -1,46 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/user_model.dart';
 import '../services/auth_repository.dart';
+import '../providers/auth_providers.dart';
 import '../../../core/exceptions/app_exception.dart';
-
-/// Provider del AuthRepository
-final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository();
-});
-
-/// Provider que escucha los cambios de estado de autenticación de Firebase
-final authStateProvider = StreamProvider<UserModel?>((ref) {
-  final authRepository = ref.watch(authRepositoryProvider);
-  return authRepository.authStateChanges;
-});
-
-/// Estados de autenticación para el ViewModel
-sealed class AuthState {
-  const AuthState();
-}
-
-class AuthInitial extends AuthState {
-  const AuthInitial();
-}
-
-class AuthLoading extends AuthState {
-  const AuthLoading();
-}
-
-class AuthAuthenticated extends AuthState {
-  final UserModel user;
-  const AuthAuthenticated(this.user);
-}
-
-class AuthUnauthenticated extends AuthState {
-  const AuthUnauthenticated();
-}
-
-class AuthError extends AuthState {
-  final String message;
-  final String? code;
-  const AuthError(this.message, {this.code});
-}
+import 'auth_state.dart';
 
 /// ViewModel para manejo de autenticación usando AsyncNotifier
 class AuthViewModel extends AsyncNotifier<AuthState> {
@@ -217,6 +180,21 @@ final currentUserProvider = Provider<UserModel?>((ref) {
   final authState = ref.watch(authViewModelProvider).value;
   if (authState is AuthAuthenticated) {
     return authState.user;
+  }
+  return null;
+});
+
+/// Provider de conveniencia para verificar si está cargando
+final isLoadingProvider = Provider<bool>((ref) {
+  final asyncState = ref.watch(authViewModelProvider);
+  return asyncState.isLoading || asyncState.value is AuthLoading;
+});
+
+/// Provider de conveniencia para obtener el mensaje de error
+final authErrorProvider = Provider<String?>((ref) {
+  final authState = ref.watch(authViewModelProvider).value;
+  if (authState is AuthError) {
+    return authState.message;
   }
   return null;
 });

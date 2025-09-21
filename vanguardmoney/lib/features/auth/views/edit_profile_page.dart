@@ -7,10 +7,11 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/exceptions/app_exception.dart';
 import '../../../core/exceptions/error_handler.dart';
+import '../constants/auth_constants.dart';
 import '../models/edit_profile_model.dart';
 import '../models/user_profile_model.dart';
-import '../viewmodels/edit_profile_provider.dart';
-import '../viewmodels/auth_provider.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/edit_profile_viewmodel.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
@@ -28,7 +29,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    _selectedCurrency = 'S/';
+    _selectedCurrency = 'S/'; // Valor por defecto válido en AuthConstants
   }
 
   @override
@@ -335,7 +336,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             filled: true,
             fillColor: Theme.of(context).colorScheme.surface,
           ),
-          items: SupportedCurrencies.currencies.map((currency) {
+          items: AuthConstants.currencies.map((currency) {
             return DropdownMenuItem<String>(
               value: currency['code'],
               child: Row(

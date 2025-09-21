@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../transactions/views/transacciones_view.dart';
-import '../../../auth/viewmodels/auth_provider.dart';
+import '../../../auth/viewmodels/auth_viewmodel.dart';
 
 // TAB CONTAINER: Este tab llama al módulo de transacciones funcional
 class TransaccionesTabPage extends ConsumerWidget {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../viewmodels/layout_viewmodel.dart';
 import 'tabs/home_tab_page.dart';
 import 'tabs/planes_tab_page.dart';
@@ -8,10 +9,29 @@ import 'tabs/reportes_tab_page.dart';
 import 'tabs/analysis_tab_page.dart';
 import 'widgets/profile_drawer.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../core/theme/app_colors.dart';
 
 // LAYOUT PRINCIPAL - Solo contiene la estructura de navegación
 class MainLayout extends ConsumerWidget {
   const MainLayout({super.key});
+
+  // Colores específicos para cada tab
+  Color _getTabColor(int index) {
+    switch (index) {
+      case 0: // Home - Inicio
+        return AppColors.redCoral;
+      case 1: // Planes
+        return AppColors.greenJade;
+      case 2: // Análisis IA
+        return AppColors.blackGrey;
+      case 3: // Transacciones
+        return AppColors.pinkPastel;
+      case 4: // Reportes
+        return AppColors.yellowPastel;
+      default:
+        return AppColors.blueClassic;
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -65,42 +85,33 @@ class MainLayout extends ConsumerWidget {
     );
   }
 
-  // Botón flotante central para Análisis IA - Diseño innovador
+  // Botón flotante central para Análisis IA - Diseño limpio con Gemini
   Widget _buildAICenterButton(
     BuildContext context,
     WidgetRef ref,
     int currentIndex,
   ) {
-    final isAISelected =
-        currentIndex == 2; // Análisis IA ahora está en posición 2
+    final isAISelected = currentIndex == 2;
+    final aiColor = _getTabColor(2); // Color específico para AI
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      height: isAISelected ? 60 : 56,
-      width: isAISelected ? 60 : 56,
+    return Container(
+      height: 64,
+      width: 64,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isAISelected
-              ? [
-                  const Color(0xFF6A11CB), // Púrpura vibrante
-                  const Color(0xFF2575FC), // Azul eléctrico
-                ]
-              : [
-                  const Color(0xFF667eea), // Azul suave
-                  const Color(0xFFf093fb), // Rosa suave
-                ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isAISelected ? aiColor : AppColors.white,
         shape: BoxShape.circle,
+        border: Border.all(
+          color: isAISelected ? aiColor : AppColors.greyMedium,
+          width: isAISelected ? 3 : 2,
+        ),
         boxShadow: [
           BoxShadow(
             color: isAISelected
-                ? const Color(0xFF6A11CB).withOpacity(0.4)
-                : const Color(0xFF667eea).withOpacity(0.3),
-            blurRadius: isAISelected ? 15 : 10,
-            offset: const Offset(0, 5),
-            spreadRadius: isAISelected ? 2 : 0,
+                ? aiColor.withOpacity(0.3)
+                : AppColors.blackGrey.withOpacity(0.1),
+            blurRadius: isAISelected ? 12 : 6,
+            offset: const Offset(0, 3),
+            spreadRadius: isAISelected ? 1 : 0,
           ),
         ],
       ),
@@ -110,37 +121,16 @@ class MainLayout extends ConsumerWidget {
           onTap: () {
             ref.read(layoutViewModelProvider.notifier).navigateToIndex(2);
           },
-          borderRadius: BorderRadius.circular(30),
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 2,
-              ),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.psychology_alt,
-                    size: isAISelected ? 28 : 24,
-                    color: Colors.white,
-                  ),
-                  if (isAISelected) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      AppStrings.navAnalysisIA,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+          borderRadius: BorderRadius.circular(32),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: SvgPicture.asset(
+              'assets/gemini-color.svg',
+              width: 32,
+              height: 32,
+              colorFilter: isAISelected
+                  ? const ColorFilter.mode(Colors.white, BlendMode.srcIn)
+                  : null, // Mantener colores originales cuando no está seleccionado
             ),
           ),
         ),
@@ -148,7 +138,7 @@ class MainLayout extends ConsumerWidget {
     );
   }
 
-  // Barra de navegación personalizada sin el botón central
+  // Barra de navegación personalizada con diseño limpio
   Widget _buildCustomBottomNavigationBar(
     BuildContext context,
     WidgetRef ref,
@@ -157,15 +147,13 @@ class MainLayout extends ConsumerWidget {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
       notchMargin: 8.0,
-      elevation: 8,
+      elevation: 0,
+      color: AppColors.white,
       child: Container(
         height: 60,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.white, Colors.grey.shade50],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+          color: AppColors.white,
+          border: Border(top: BorderSide(color: AppColors.greyLight, width: 1)),
         ),
         child: Row(
           children: [
@@ -174,9 +162,11 @@ class MainLayout extends ConsumerWidget {
                 context,
                 ref,
                 0,
+                Icons.home_outlined,
                 Icons.home,
                 AppStrings.navHome,
                 currentIndex,
+                _getTabColor(0), // Color específico para Home
               ),
             ),
             Expanded(
@@ -184,20 +174,24 @@ class MainLayout extends ConsumerWidget {
                 context,
                 ref,
                 1,
+                Icons.timeline_outlined,
                 Icons.timeline,
                 AppStrings.navPlanes,
                 currentIndex,
+                _getTabColor(1), // Color específico para Planes
               ),
             ),
-            const SizedBox(width: 40), // Espacio para el FAB central
+            const SizedBox(width: 64), // Espacio para el FAB central (Gemini)
             Expanded(
               child: _buildNavItem(
                 context,
                 ref,
                 3,
                 Icons.add_circle_outline,
+                Icons.add_circle,
                 AppStrings.navTransactions,
                 currentIndex,
+                _getTabColor(3), // Color específico para Transacciones
               ),
             ),
             Expanded(
@@ -205,9 +199,11 @@ class MainLayout extends ConsumerWidget {
                 context,
                 ref,
                 4,
+                Icons.bar_chart_outlined,
                 Icons.bar_chart,
                 AppStrings.navReports,
                 currentIndex,
+                _getTabColor(4), // Color específico para Reportes
               ),
             ),
           ],
@@ -216,69 +212,62 @@ class MainLayout extends ConsumerWidget {
     );
   }
 
-  // Widget individual para cada item de navegación - Diseño mejorado sin overflow
+  // Widget individual para cada item de navegación - Diseño limpio con línea superior
   Widget _buildNavItem(
     BuildContext context,
     WidgetRef ref,
     int index,
-    IconData icon,
+    IconData outlinedIcon,
+    IconData filledIcon,
     String label,
     int currentIndex,
+    Color tabColor, // Color específico para este tab
   ) {
     final isSelected = currentIndex == index;
-    final theme = Theme.of(context);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            ref.read(layoutViewModelProvider.notifier).navigateToIndex(index);
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? theme.colorScheme.primary.withOpacity(0.1)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : Colors.grey.shade600,
-                    size: isSelected ? 22 : 20,
-                  ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          ref.read(layoutViewModelProvider.notifier).navigateToIndex(index);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Línea superior de selección (como en la imagen)
+              Container(
+                height: 3,
+                width: 32,
+                decoration: BoxDecoration(
+                  color: isSelected ? tabColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                const SizedBox(height: 2),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      color: isSelected
-                          ? theme.colorScheme.primary
-                          : Colors.grey.shade600,
-                      fontSize: 10,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
+              ),
+              const SizedBox(height: 6),
+              // Icono
+              Icon(
+                isSelected ? filledIcon : outlinedIcon,
+                color: isSelected ? tabColor : AppColors.greyDark,
+                size: 22,
+              ),
+              const SizedBox(height: 2),
+              // Texto
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: isSelected ? tabColor : AppColors.greyDark,
+                    fontSize: 10,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../auth/viewmodels/auth_provider.dart';
+import '../../auth/viewmodels/auth_viewmodel.dart';
 
 // VISTA ESPECÍFICA DEL HOME - Dashboard principal
 class HomeView extends ConsumerWidget {

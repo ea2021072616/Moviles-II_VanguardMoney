@@ -10,7 +10,7 @@ import "../constants/auth_constants.dart";
 import "../widgets/auth_text_field.dart";
 import "../widgets/currency_selector.dart";
 import "../widgets/password_strength_indicator.dart";
-import "../viewmodels/auth_provider.dart";
+import "../viewmodels/auth_viewmodel.dart";
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -334,7 +334,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ).colorScheme.surface, // Requerido para ShaderMask
               letterSpacing: AuthConstants.titleLetterSpacing,
               height: 1.0,
-              fontSize: AuthConstants.titleFontSize,
+              fontSize: AppSizes.fontSizeTitleXL,
             ),
           ),
         ),
@@ -348,7 +348,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             color: Theme.of(context).colorScheme.onSurface.withOpacity(0.70),
             fontWeight: FontWeight.w500,
             letterSpacing: 0.3,
-            fontSize: AuthConstants.subtitleFontSize,
+            fontSize: AppSizes.fontSizeL,
             height: 1.4,
           ),
           textAlign: TextAlign.center,
@@ -505,7 +505,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget _buildActionButton() {
     return SizedBox(
       width: double.infinity,
-      height: AuthConstants.buttonHeight,
+      height: AppSizes.buttonHeightL,
       child: ElevatedButton(
         onPressed: isLoading ? null : _submitForm,
         style: ElevatedButton.styleFrom(

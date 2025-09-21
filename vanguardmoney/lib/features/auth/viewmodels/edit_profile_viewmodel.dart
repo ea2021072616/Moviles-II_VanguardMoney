@@ -4,7 +4,8 @@ import '../models/edit_profile_model.dart';
 import '../models/user_profile_model.dart';
 import '../services/auth_repository.dart';
 import '../../../core/exceptions/app_exception.dart';
-import 'auth_provider.dart';
+import '../providers/auth_providers.dart';
+import 'auth_viewmodel.dart';
 
 /// Provider para obtener el perfil completo del usuario desde Firestore
 final currentUserProfileProvider = FutureProvider<UserProfileModel?>((
