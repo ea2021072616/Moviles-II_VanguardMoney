@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/Ver_transacciones_viewmodel.dart';
+import '../../../core/theme/app_colors.dart';
 
 class VerTransaccionesView extends StatefulWidget {
   const VerTransaccionesView({Key? key}) : super(key: key);
@@ -48,15 +49,15 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
             'Mis Transacciones',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: AppColors.white,
             ),
           ),
-          backgroundColor: Colors.green[700],
+          backgroundColor: AppColors.blueClassic,
           elevation: 0,
           actions: [
             IconButton(
               onPressed: _refrescarDatos,
-              icon: const Icon(Icons.refresh, color: Colors.white),
+              icon: const Icon(Icons.refresh, color: AppColors.white),
               tooltip: 'Actualizar',
             ),
           ],
@@ -68,8 +69,8 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: _refrescarDatos,
-          backgroundColor: Colors.green[700],
-          child: const Icon(Icons.add, color: Colors.white),
+          backgroundColor: AppColors.blueClassic,
+          child: const Icon(Icons.add, color: AppColors.white),
           tooltip: 'Agregar transacción',
         ),
       ),
@@ -83,14 +84,14 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.blueClassic),
             ),
             SizedBox(height: 16),
             Text(
               'Cargando transacciones...',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey,
+                color: AppColors.greyDark,
               ),
             ),
           ],
@@ -106,7 +107,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
             Icon(
               Icons.error_outline,
               size: 64,
-              color: Colors.red[300],
+              color: AppColors.redCoral,
             ),
             const SizedBox(height: 16),
             Text(
@@ -114,7 +115,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.red[600],
+                color: AppColors.redCoral,
               ),
             ),
             const SizedBox(height: 8),
@@ -125,7 +126,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Colors.grey,
+                  color: AppColors.greyDark,
                 ),
               ),
             ),
@@ -135,8 +136,8 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
               icon: const Icon(Icons.refresh),
               label: const Text('Reintentar'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green[700],
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.blueClassic,
+                foregroundColor: AppColors.white,
               ),
             ),
           ],
@@ -152,7 +153,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
             Icon(
               Icons.receipt_long_outlined,
               size: 64,
-              color: Colors.grey[400],
+              color: AppColors.greyMedium,
             ),
             const SizedBox(height: 16),
             Text(
@@ -160,7 +161,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
+                color: AppColors.greyDark,
               ),
             ),
             const SizedBox(height: 8),
@@ -168,7 +169,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
               'Tus transacciones aparecerán aquí',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[500],
+                color: AppColors.greyDark,
               ),
             ),
           ],
@@ -178,7 +179,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
 
     return RefreshIndicator(
       onRefresh: _refrescarDatos,
-      color: Colors.green[700],
+      color: AppColors.blueClassic,
       child: ListView.builder(
         padding: const EdgeInsets.all(16.0),
         itemCount: viewModel.transacciones.length,
@@ -192,7 +193,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
 
   Widget _buildTransaccionCard(TransaccionItem transaccion) {
     final bool esIngreso = transaccion.tipo == 'ingreso';
-    final Color colorPrincipal = esIngreso ? Colors.green : Colors.red;
+    final Color colorPrincipal = esIngreso ? const Color(0xFF377CC8) : AppColors.redCoral;
     final IconData icono = esIngreso ? Icons.add_circle : Icons.remove_circle;
 
     return Card(
@@ -254,7 +255,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                 Text(
                   transaccion.descripcion,
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: AppColors.greyDark,
                     fontSize: 14,
                   ),
                   maxLines: 2,
@@ -266,13 +267,13 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                   Icon(
                     Icons.calendar_today,
                     size: 14,
-                    color: Colors.grey[500],
+                    color: AppColors.greyDark,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     _formatDate(transaccion.fecha),
                     style: TextStyle(
-                      color: Colors.grey[500],
+                      color: AppColors.greyDark,
                       fontSize: 12,
                     ),
                   ),
