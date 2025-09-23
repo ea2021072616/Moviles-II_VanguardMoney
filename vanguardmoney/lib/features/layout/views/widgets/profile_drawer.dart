@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -790,41 +790,125 @@ class _NotificationsDialogWidget extends StatefulWidget {
 }
 
 class _NotificationsDialogWidgetState extends State<_NotificationsDialogWidget> {
-  bool? _pushNotificationsEnabled;
   bool _isLoading = true;
+  PermissionStatus? _permissionStatus;
+  // Variable adicional para gestionar el estado del toggle independientemente del permiso del sistema
+  bool _notificationsEnabled = true;
 
   @override
   void initState() {
     super.initState();
-    _loadNotificationSetting();
+    _checkPermissionStatus();
   }
 
-  Future<void> _loadNotificationSetting() async {
+  Future<void> _checkPermissionStatus() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final enabled = prefs.getBool('push_notifications_enabled') ?? true;
+      final status = await Permission.notification.status;
       if (mounted) {
         setState(() {
-          _pushNotificationsEnabled = enabled;
+          _permissionStatus = status;
+          // Inicializamos el estado del toggle basado en el permiso del sistema
+          _notificationsEnabled = status == PermissionStatus.granted;
           _isLoading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _pushNotificationsEnabled = true; // Valor por defecto
+          _permissionStatus = PermissionStatus.denied;
+          _notificationsEnabled = false;
           _isLoading = false;
         });
       }
+      debugPrint('Error al verificar permisos de notificaciones: $e');
     }
   }
 
-  Future<void> _saveNotificationSetting(bool enabled) async {
+  Future<void> _requestNotificationPermission(bool enable) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('push_notifications_enabled', enabled);
+      // Actualizamos inmediatamente el estado del toggle
+      setState(() {
+        _notificationsEnabled = enable;
+      });
+      
+      if (enable) {
+        // Solo solicitamos permiso del sistema si queremos activar y no tenemos permiso
+        if (_permissionStatus != PermissionStatus.granted) {
+          final status = await Permission.notification.request();
+          if (mounted) {
+            setState(() {
+              _permissionStatus = status;
+            });
+          }
+        }
+      } else {
+        // Para desactivar, abrimos directamente los ajustes del sistema
+        if (_permissionStatus == PermissionStatus.granted) {
+          // Mostramos una alerta que explique cómo desactivar las notificaciones
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: Text('Desactivar notificaciones'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Para desactivar completamente las notificaciones a nivel del sistema, sigue estos pasos:',
+                    style: TextStyle(
+                      color: AppColors.greyDark,
+                      fontSize: AppSizes.fontSizeM,
+                    ),
+                  ),
+                  SizedBox(height: AppSizes.spaceM),
+                  Container(
+                    padding: EdgeInsets.all(AppSizes.spaceS),
+                    decoration: BoxDecoration(
+                      color: AppColors.greyLight,
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('1. Haz clic en "Abrir configuración"', 
+                          style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('2. Selecciona "Notificaciones"'),
+                        Text('3. Desactiva las notificaciones para VanguardMoney'),
+                        Text('4. Vuelve a la aplicación'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // Revertimos el toggle porque realmente no se ha desactivado
+                    setState(() {
+                      _notificationsEnabled = true;
+                    });
+                  },
+                  child: Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    openAppSettings();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.yellowPastel,
+                  ),
+                  child: Text('Abrir configuración'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
     } catch (e) {
-      debugPrint('Error al guardar configuración de notificaciones push: $e');
+      debugPrint('Error al gestionar permisos de notificaciones: $e');
     }
   }
 
@@ -847,7 +931,8 @@ class _NotificationsDialogWidgetState extends State<_NotificationsDialogWidget> 
       );
     }
 
-    final pushNotificationsEnabled = _pushNotificationsEnabled ?? true;
+    // Usamos nuestra variable de estado interna para el UI en lugar del permiso del sistema
+    final bool notificationsEnabled = _notificationsEnabled;
 
     return AlertDialog(
       backgroundColor: AppColors.white,
@@ -869,7 +954,7 @@ class _NotificationsDialogWidgetState extends State<_NotificationsDialogWidget> 
               borderRadius: BorderRadius.circular(AppSizes.radiusS),
             ),
             child: Icon(
-              pushNotificationsEnabled 
+              notificationsEnabled 
                 ? Icons.notifications_active
                 : Icons.notifications_off,
               color: AppColors.yellowPastel,
@@ -905,18 +990,77 @@ class _NotificationsDialogWidgetState extends State<_NotificationsDialogWidget> 
             ),
             SizedBox(height: AppSizes.spaceL),
             
+            // Información de estado de los permisos del sistema
+            if (_permissionStatus != null && _permissionStatus != PermissionStatus.granted && notificationsEnabled)
+              Container(
+                margin: EdgeInsets.only(bottom: AppSizes.spaceM),
+                padding: EdgeInsets.all(AppSizes.spaceM),
+                decoration: BoxDecoration(
+                  color: AppColors.redCoral.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  border: Border.all(color: AppColors.redCoral.withOpacity(0.3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.warning_amber_rounded, 
+                      color: AppColors.redCoral, size: AppSizes.iconS),
+                    SizedBox(width: AppSizes.spaceS),
+                    Expanded(
+                      child: Text(
+                        'Las notificaciones están bloqueadas en la configuración del dispositivo. '
+                        'Se solicitarán los permisos al guardar.',
+                        style: TextStyle(
+                          color: AppColors.greyDark,
+                          fontSize: AppSizes.fontSizeS,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+            // Si el usuario ya tiene permisos pero los notificaciones están desactivadas en la app, mostrar info
+            if (_permissionStatus == PermissionStatus.granted && !notificationsEnabled)
+              Container(
+                margin: EdgeInsets.only(bottom: AppSizes.spaceM),
+                padding: EdgeInsets.all(AppSizes.spaceM),
+                decoration: BoxDecoration(
+                  color: AppColors.blueLavender.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  border: Border.all(color: AppColors.blueLavender.withOpacity(0.3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline, 
+                      color: AppColors.blueLavender, size: AppSizes.iconS),
+                    SizedBox(width: AppSizes.spaceS),
+                    Expanded(
+                      child: Text(
+                        'Para desactivar notificaciones a nivel del sistema, pulsa el interruptor y sigue las instrucciones.',
+                        style: TextStyle(
+                          color: AppColors.greyDark,
+                          fontSize: AppSizes.fontSizeS,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            
             // Switch principal para notificaciones push
             Container(
               padding: EdgeInsets.all(AppSizes.spaceM),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(AppSizes.radiusM),
                 border: Border.all(
-                  color: pushNotificationsEnabled 
+                  color: notificationsEnabled 
                     ? AppColors.yellowPastel.withOpacity(0.3)
                     : AppColors.greyLight,
                   width: 1,
                 ),
-                color: pushNotificationsEnabled 
+                color: notificationsEnabled 
                   ? AppColors.yellowPastel.withOpacity(0.08)
                   : Colors.transparent,
               ),
@@ -949,7 +1093,7 @@ class _NotificationsDialogWidgetState extends State<_NotificationsDialogWidget> 
                         ),
                         SizedBox(height: AppSizes.spaceXS),
                         Text(
-                          pushNotificationsEnabled
+                          notificationsEnabled
                             ? 'Recibirás alertas de gastos, límites de presupuesto y recordatorios financieros'
                             : 'No recibirás ninguna notificación en tu dispositivo',
                           style: TextStyle(
@@ -962,11 +1106,16 @@ class _NotificationsDialogWidgetState extends State<_NotificationsDialogWidget> 
                     ),
                   ),
                   Switch.adaptive(
-                    value: pushNotificationsEnabled,
-                    onChanged: (value) {
-                      setState(() {
-                        _pushNotificationsEnabled = value;
-                      });
+                    value: notificationsEnabled,
+                    onChanged: (value) async {
+                      // Si es true (activar) o si es false (desactivar) pero ya tenemos permiso
+                      await _requestNotificationPermission(value);
+                      
+                      // Solo refrescamos el estado después de volver de los ajustes del sistema
+                      // si estamos activando las notificaciones
+                      if (value) {
+                        await _checkPermissionStatus();
+                      }
                     },
                     activeColor: AppColors.yellowPastel,
                     activeTrackColor: AppColors.yellowPastel.withOpacity(0.3),
@@ -1051,42 +1200,129 @@ class _NotificationsDialogWidgetState extends State<_NotificationsDialogWidget> 
         ),
         ElevatedButton(
           onPressed: () async {
-            // Guardar configuración
-            await _saveNotificationSetting(_pushNotificationsEnabled ?? true);
+            // Si el usuario desea activar notificaciones pero no tiene permiso
+            if (_permissionStatus == PermissionStatus.denied && notificationsEnabled) {
+              // Solicitar el permiso
+              await _requestNotificationPermission(true);
+              await _checkPermissionStatus();
+            }
             
-            if (mounted) {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Row(
+            // Si el usuario desea desactivar y actualmente tiene permisos, mostrarle cómo hacerlo
+            if (!notificationsEnabled && _permissionStatus == PermissionStatus.granted) {
+              Navigator.of(context).pop(); // Cerrar el diálogo actual
+              // Mostrar diálogo para ir a configuración y desactivar notificaciones
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => AlertDialog(
+                  title: Text('Desactivar notificaciones a nivel del sistema'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        (_pushNotificationsEnabled ?? true)
-                          ? Icons.notifications_active
-                          : Icons.notifications_off,
-                        color: AppColors.white,
-                      ),
-                      SizedBox(width: AppSizes.spaceS),
-                      Expanded(
-                        child: Text(
-                          (_pushNotificationsEnabled ?? true)
-                            ? 'Notificaciones activadas correctamente'
-                            : 'Notificaciones desactivadas correctamente',
-                          style: TextStyle(color: AppColors.white),
+                      Text('Para desactivar completamente las notificaciones:'),
+                      SizedBox(height: AppSizes.spaceM),
+                      Container(
+                        padding: EdgeInsets.all(AppSizes.spaceS),
+                        decoration: BoxDecoration(
+                          color: AppColors.greyLight,
+                          borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('1. Haz clic en "Abrir configuración"', 
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text('2. Selecciona "Notificaciones"'),
+                            Text('3. Desactiva el interruptor para VanguardMoney'),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  backgroundColor: (_pushNotificationsEnabled ?? true)
-                    ? AppColors.greenJade 
-                    : AppColors.redCoral,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                  ),
-                  duration: const Duration(seconds: 3),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('Más tarde'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        openAppSettings();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.yellowPastel,
+                      ),
+                      child: Text('Abrir configuración'),
+                    ),
+                  ],
                 ),
               );
+              return;
+            }
+            
+            // Verificar el estado actual
+            if (mounted) {
+              // Si quiere activar pero no tiene permiso, mostrar diálogo para ir a configuración
+              if (notificationsEnabled && _permissionStatus != PermissionStatus.granted) {
+                Navigator.of(context).pop(); // Cerrar el diálogo de notificaciones
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: Text('Permiso necesario'),
+                    content: Text(
+                      'Para recibir notificaciones, es necesario otorgar permisos en la configuración del sistema. '
+                      '¿Deseas ir a la configuración ahora?'
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Más tarde'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          openAppSettings();
+                        },
+                        child: Text('Ir a ajustes'),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                // Si todo está correcto, cerramos y mostramos confirmación
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(
+                          _permissionStatus == PermissionStatus.granted
+                            ? Icons.notifications_active
+                            : Icons.notifications_off,
+                          color: AppColors.white,
+                        ),
+                        SizedBox(width: AppSizes.spaceS),
+                        Expanded(
+                          child: Text(
+                            _permissionStatus == PermissionStatus.granted
+                              ? 'Notificaciones activadas correctamente'
+                              : 'Notificaciones desactivadas correctamente',
+                            style: TextStyle(color: AppColors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: _permissionStatus == PermissionStatus.granted
+                      ? AppColors.greenJade 
+                      : AppColors.redCoral,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                    ),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
             }
           },
           style: ElevatedButton.styleFrom(
