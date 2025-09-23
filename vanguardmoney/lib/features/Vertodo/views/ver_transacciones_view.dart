@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/Ver_transacciones_viewmodel.dart';
+import '../services/busqueda.dart';
 import '../../../core/theme/app_colors.dart';
 
 class VerTransaccionesView extends StatefulWidget {
@@ -12,11 +13,15 @@ class VerTransaccionesView extends StatefulWidget {
 
 class _VerTransaccionesViewState extends State<VerTransaccionesView> {
   late VerTransaccionesViewModel _viewModel;
+  late ServicioBusquedaTransacciones _servicioBusqueda;
+  CriteriosBusqueda _criteriosBusqueda = const CriteriosBusqueda();
+  bool _mostrarFiltros = false;
 
   @override
   void initState() {
     super.initState();
     _viewModel = VerTransaccionesViewModel();
+    _servicioBusqueda = ServicioBusquedaTransacciones();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cargarDatos();
     });
@@ -55,6 +60,52 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
           backgroundColor: AppColors.blueClassic,
           elevation: 0,
           actions: [
+            // Botón para mostrar/ocultar filtros
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _mostrarFiltros = !_mostrarFiltros;
+                });
+              },
+              icon: Icon(
+                _mostrarFiltros ? Icons.filter_list_off : Icons.filter_list,
+                color: AppColors.white,
+              ),
+              tooltip: _mostrarFiltros ? 'Ocultar filtros' : 'Mostrar filtros',
+            ),
+            // Indicador de filtros activos
+            if (_criteriosBusqueda.tienesFiltrosActivos)
+              Container(
+                margin: const EdgeInsets.only(right: 8),
+                child: Stack(
+                  children: [
+                    IconButton(
+                      onPressed: _limpiarFiltros,
+                      icon: const Icon(Icons.clear_all, color: AppColors.white),
+                      tooltip: 'Limpiar filtros',
+                    ),
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: AppColors.redCoral,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '${_criteriosBusqueda.cantidadFiltrosActivos}',
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             IconButton(
               onPressed: _refrescarDatos,
               icon: const Icon(Icons.refresh, color: AppColors.white),
@@ -64,7 +115,14 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
         ),
         body: Consumer<VerTransaccionesViewModel>(
           builder: (context, viewModel, child) {
-            return _buildTransaccionesList(viewModel);
+            return Column(
+              children: [
+                // Panel de filtros expandible
+                if (_mostrarFiltros) _buildPanelFiltros(viewModel),
+                // Lista de transacciones
+                Expanded(child: _buildTransaccionesList(viewModel)),
+              ],
+            );
           },
         ),
         floatingActionButton: FloatingActionButton(
@@ -145,19 +203,34 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
       );
     }
 
-    if (viewModel.transacciones.isEmpty) {
+    // Aplicar filtros a las transacciones
+    final transaccionesFiltradas = _servicioBusqueda.filtrarTransacciones(
+      viewModel.transacciones,
+      _criteriosBusqueda,
+    );
+
+    if (transaccionesFiltradas.isEmpty) {
+      final mensaje = _criteriosBusqueda.tienesFiltrosActivos
+          ? 'No hay transacciones que coincidan con los filtros'
+          : 'No hay transacciones';
+      final descripcion = _criteriosBusqueda.tienesFiltrosActivos
+          ? 'Intenta ajustar los filtros para ver más resultados'
+          : 'Tus transacciones aparecerán aquí';
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.receipt_long_outlined,
+              _criteriosBusqueda.tienesFiltrosActivos
+                  ? Icons.search_off
+                  : Icons.receipt_long_outlined,
               size: 64,
               color: AppColors.greyMedium,
             ),
             const SizedBox(height: 16),
             Text(
-              'No hay transacciones',
+              mensaje,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -166,12 +239,24 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tus transacciones aparecerán aquí',
+              descripcion,
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.greyDark,
               ),
             ),
+            if (_criteriosBusqueda.tienesFiltrosActivos) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _limpiarFiltros,
+                icon: const Icon(Icons.clear_all),
+                label: const Text('Limpiar filtros'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.blueClassic,
+                  foregroundColor: AppColors.white,
+                ),
+              ),
+            ],
           ],
         ),
       );
@@ -182,9 +267,9 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
       color: AppColors.blueClassic,
       child: ListView.builder(
         padding: const EdgeInsets.all(16.0),
-        itemCount: viewModel.transacciones.length,
+        itemCount: transaccionesFiltradas.length,
         itemBuilder: (context, index) {
-          final transaccion = viewModel.transacciones[index];
+          final transaccion = transaccionesFiltradas[index];
           return _buildTransaccionCard(transaccion);
         },
       ),
@@ -300,6 +385,363 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
         ),
       ),
     );
+  }
+
+  Widget _buildPanelFiltros(VerTransaccionesViewModel viewModel) {
+    return Container(
+      color: AppColors.greyLight,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Título del panel
+          Row(
+            children: [
+              const Icon(Icons.filter_list, color: AppColors.blueClassic),
+              const SizedBox(width: 8),
+              Text(
+                'Filtros de búsqueda',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.greyDark,
+                ),
+              ),
+              const Spacer(),
+              if (_criteriosBusqueda.tienesFiltrosActivos)
+                TextButton.icon(
+                  onPressed: _limpiarFiltros,
+                  icon: const Icon(Icons.clear, size: 16),
+                  label: const Text('Limpiar'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.redCoral,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Filtro por tipo de transacción
+          _buildFiltroTipo(),
+          const SizedBox(height: 16),
+          
+          // Filtro por categoría
+          _buildFiltroCategoria(viewModel),
+          const SizedBox(height: 16),
+          
+          // Filtros de fecha
+          _buildFiltrosFecha(),
+          const SizedBox(height: 16),
+          
+          // Criterio de ordenamiento
+          _buildCriterioOrden(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFiltroTipo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tipo de movimiento',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.greyDark,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            _buildChipFiltro(
+              'Todos',
+              _criteriosBusqueda.tipoFiltro == TipoFiltro.todos,
+              () => _actualizarFiltroTipo(TipoFiltro.todos),
+            ),
+            const SizedBox(width: 8),
+            _buildChipFiltro(
+              'Ingresos',
+              _criteriosBusqueda.tipoFiltro == TipoFiltro.ingresos,
+              () => _actualizarFiltroTipo(TipoFiltro.ingresos),
+            ),
+            const SizedBox(width: 8),
+            _buildChipFiltro(
+              'Gastos',
+              _criteriosBusqueda.tipoFiltro == TipoFiltro.gastos,
+              () => _actualizarFiltroTipo(TipoFiltro.gastos),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFiltroCategoria(VerTransaccionesViewModel viewModel) {
+    final categorias = _servicioBusqueda.obtenerCategorias(viewModel.transacciones);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Categoría',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.greyDark,
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (categorias.isEmpty)
+          Text(
+            'No hay categorías disponibles',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.greyDark,
+            ),
+          )
+        else
+          DropdownButtonFormField<String>(
+            value: _criteriosBusqueda.categoriaFiltro,
+            decoration: InputDecoration(
+              hintText: 'Todas las categorías',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+            items: [
+              const DropdownMenuItem<String>(
+                value: null,
+                child: Text('Todas las categorías'),
+              ),
+              ...categorias.map((categoria) => DropdownMenuItem<String>(
+                value: categoria,
+                child: Text(categoria),
+              )),
+            ],
+            onChanged: _actualizarFiltroCategoria,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFiltrosFecha() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Rango de fechas',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.greyDark,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            // Fecha de inicio
+            Expanded(
+              child: InkWell(
+                onTap: () => _seleccionarFecha(true),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.greyMedium),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 16, color: AppColors.greyDark),
+                      const SizedBox(width: 8),
+                      Text(
+                        _criteriosBusqueda.fechaInicio != null
+                            ? _formatDate(_criteriosBusqueda.fechaInicio!)
+                            : 'Fecha inicio',
+                        style: TextStyle(
+                          color: _criteriosBusqueda.fechaInicio != null
+                              ? AppColors.greyDark
+                              : AppColors.greyMedium,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Fecha de fin
+            Expanded(
+              child: InkWell(
+                onTap: () => _seleccionarFecha(false),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: AppColors.greyMedium),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 16, color: AppColors.greyDark),
+                      const SizedBox(width: 8),
+                      Text(
+                        _criteriosBusqueda.fechaFin != null
+                            ? _formatDate(_criteriosBusqueda.fechaFin!)
+                            : 'Fecha fin',
+                        style: TextStyle(
+                          color: _criteriosBusqueda.fechaFin != null
+                              ? AppColors.greyDark
+                              : AppColors.greyMedium,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (_criteriosBusqueda.fechaInicio != null || _criteriosBusqueda.fechaFin != null)
+              IconButton(
+                onPressed: _limpiarFiltrosFecha,
+                icon: const Icon(Icons.clear, color: AppColors.redCoral),
+                tooltip: 'Limpiar fechas',
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCriterioOrden() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ordenar por',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.greyDark,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            _buildChipFiltro(
+              'Fecha reciente',
+              _criteriosBusqueda.criterioOrden == CriterioOrden.fechaReciente,
+              () => _actualizarCriterioOrden(CriterioOrden.fechaReciente),
+            ),
+            const SizedBox(width: 8),
+            _buildChipFiltro(
+              'Fecha antigua',
+              _criteriosBusqueda.criterioOrden == CriterioOrden.fechaAntigua,
+              () => _actualizarCriterioOrden(CriterioOrden.fechaAntigua),
+            ),
+            const SizedBox(width: 8),
+            _buildChipFiltro(
+              'Categoría',
+              _criteriosBusqueda.criterioOrden == CriterioOrden.categoria,
+              () => _actualizarCriterioOrden(CriterioOrden.categoria),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChipFiltro(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.blueClassic : AppColors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.blueClassic : AppColors.greyMedium,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? AppColors.white : AppColors.greyDark,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Métodos para actualizar filtros
+  void _actualizarFiltroTipo(TipoFiltro tipo) {
+    setState(() {
+      _criteriosBusqueda = _criteriosBusqueda.copyWith(tipoFiltro: tipo);
+    });
+  }
+
+  void _actualizarFiltroCategoria(String? categoria) {
+    setState(() {
+      _criteriosBusqueda = _criteriosBusqueda.copyWith(categoriaFiltro: categoria);
+    });
+  }
+
+  void _actualizarCriterioOrden(CriterioOrden criterio) {
+    setState(() {
+      _criteriosBusqueda = _criteriosBusqueda.copyWith(criterioOrden: criterio);
+    });
+  }
+
+  Future<void> _seleccionarFecha(bool esInicio) async {
+    final DateTime? fechaSeleccionada = await showDatePicker(
+      context: context,
+      initialDate: esInicio
+          ? (_criteriosBusqueda.fechaInicio ?? DateTime.now())
+          : (_criteriosBusqueda.fechaFin ?? DateTime.now()),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      locale: const Locale('es', 'ES'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.blueClassic,
+              onPrimary: AppColors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (fechaSeleccionada != null) {
+      setState(() {
+        if (esInicio) {
+          _criteriosBusqueda = _criteriosBusqueda.copyWith(fechaInicio: fechaSeleccionada);
+        } else {
+          _criteriosBusqueda = _criteriosBusqueda.copyWith(fechaFin: fechaSeleccionada);
+        }
+      });
+    }
+  }
+
+  void _limpiarFiltrosFecha() {
+    setState(() {
+      _criteriosBusqueda = _criteriosBusqueda.copyWith(
+        fechaInicio: null,
+        fechaFin: null,
+      );
+    });
+  }
+
+  void _limpiarFiltros() {
+    setState(() {
+      _criteriosBusqueda = _criteriosBusqueda.limpiarFiltros();
+    });
   }
 
   Future<void> _refrescarDatos() async {
