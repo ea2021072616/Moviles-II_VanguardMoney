@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -67,10 +68,7 @@ class ProfileDrawer extends ConsumerWidget {
                   Icons.notifications_outlined,
                   Icons.notifications,
                   'Notificaciones',
-                  () => _showComingSoon(
-                    context,
-                    'Configuración de Notificaciones',
-                  ),
+                  () => _showNotificationsDialog(context, ref),
                   color: AppColors.yellowPastel,
                 ),
                 _buildMenuItem(
@@ -569,6 +567,14 @@ class ProfileDrawer extends ConsumerWidget {
     );
   }
 
+  // Dialogo de configuración de notificaciones push del dispositivo
+  void _showNotificationsDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => _NotificationsDialogWidget(),
+    );
+  }
+
   // Dialogo "Acerca de" mejorado
   void _showAboutDialog(BuildContext context) {
     showAboutDialog(
@@ -771,6 +777,338 @@ class ProfileDrawer extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Widget separado para el diálogo de notificaciones con manejo de estado propio
+class _NotificationsDialogWidget extends StatefulWidget {
+  const _NotificationsDialogWidget();
+
+  @override
+  State<_NotificationsDialogWidget> createState() => _NotificationsDialogWidgetState();
+}
+
+class _NotificationsDialogWidgetState extends State<_NotificationsDialogWidget> {
+  bool? _pushNotificationsEnabled;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotificationSetting();
+  }
+
+  Future<void> _loadNotificationSetting() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final enabled = prefs.getBool('push_notifications_enabled') ?? true;
+      if (mounted) {
+        setState(() {
+          _pushNotificationsEnabled = enabled;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _pushNotificationsEnabled = true; // Valor por defecto
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveNotificationSetting(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('push_notifications_enabled', enabled);
+    } catch (e) {
+      debugPrint('Error al guardar configuración de notificaciones push: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return AlertDialog(
+        backgroundColor: AppColors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusL),
+        ),
+        content: SizedBox(
+          height: 100,
+          child: Center(
+            child: CircularProgressIndicator(
+              color: AppColors.yellowPastel,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final pushNotificationsEnabled = _pushNotificationsEnabled ?? true;
+
+    return AlertDialog(
+      backgroundColor: AppColors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusL),
+      ),
+      titlePadding: EdgeInsets.all(AppSizes.spaceL),
+      contentPadding: EdgeInsets.symmetric(
+        horizontal: AppSizes.spaceL,
+        vertical: AppSizes.spaceS,
+      ),
+      actionsPadding: EdgeInsets.all(AppSizes.spaceL),
+      title: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(AppSizes.spaceS),
+            decoration: BoxDecoration(
+              color: AppColors.yellowPastel.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(AppSizes.radiusS),
+            ),
+            child: Icon(
+              pushNotificationsEnabled 
+                ? Icons.notifications_active
+                : Icons.notifications_off,
+              color: AppColors.yellowPastel,
+              size: AppSizes.iconM,
+            ),
+          ),
+          SizedBox(width: AppSizes.spaceM),
+          Expanded(
+            child: Text(
+              'Notificaciones Push',
+              style: TextStyle(
+                color: AppColors.blackGrey,
+                fontSize: AppSizes.fontSizeTitleS,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Controla si VanguardMoney puede enviarte notificaciones en tu dispositivo.',
+              style: TextStyle(
+                color: AppColors.greyDark,
+                fontSize: AppSizes.fontSizeM,
+                height: 1.4,
+              ),
+            ),
+            SizedBox(height: AppSizes.spaceL),
+            
+            // Switch principal para notificaciones push
+            Container(
+              padding: EdgeInsets.all(AppSizes.spaceM),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+                border: Border.all(
+                  color: pushNotificationsEnabled 
+                    ? AppColors.yellowPastel.withOpacity(0.3)
+                    : AppColors.greyLight,
+                  width: 1,
+                ),
+                color: pushNotificationsEnabled 
+                  ? AppColors.yellowPastel.withOpacity(0.08)
+                  : Colors.transparent,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(AppSizes.spaceS),
+                    decoration: BoxDecoration(
+                      color: AppColors.yellowPastel.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                    ),
+                    child: Icon(
+                      Icons.phone_android,
+                      color: AppColors.yellowPastel,
+                      size: AppSizes.iconM,
+                    ),
+                  ),
+                  SizedBox(width: AppSizes.spaceM),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Notificaciones del Sistema',
+                          style: TextStyle(
+                            color: AppColors.blackGrey,
+                            fontSize: AppSizes.fontSizeL,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: AppSizes.spaceXS),
+                        Text(
+                          pushNotificationsEnabled
+                            ? 'Recibirás alertas de gastos, límites de presupuesto y recordatorios financieros'
+                            : 'No recibirás ninguna notificación en tu dispositivo',
+                          style: TextStyle(
+                            color: AppColors.greyDark,
+                            fontSize: AppSizes.fontSizeS,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch.adaptive(
+                    value: pushNotificationsEnabled,
+                    onChanged: (value) {
+                      setState(() {
+                        _pushNotificationsEnabled = value;
+                      });
+                    },
+                    activeColor: AppColors.yellowPastel,
+                    activeTrackColor: AppColors.yellowPastel.withOpacity(0.3),
+                    inactiveThumbColor: AppColors.greyLight,
+                    inactiveTrackColor: AppColors.greyLight.withOpacity(0.3),
+                  ),
+                ],
+              ),
+            ),
+            
+            SizedBox(height: AppSizes.spaceL),
+            
+            // Información adicional
+            Container(
+              padding: EdgeInsets.all(AppSizes.spaceM),
+              decoration: BoxDecoration(
+                color: AppColors.blueLavender.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                border: Border.all(
+                  color: AppColors.blueLavender.withOpacity(0.2),
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: AppColors.blueLavender,
+                    size: AppSizes.iconS,
+                  ),
+                  SizedBox(width: AppSizes.spaceS),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '¿Qué notificaciones recibirás?',
+                          style: TextStyle(
+                            color: AppColors.blueLavender,
+                            fontSize: AppSizes.fontSizeM,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: AppSizes.spaceXS),
+                        Text(
+                          '• Alertas cuando excedas tus límites de gastos\n'
+                          '• Recordatorios para registrar transacciones\n'
+                          '• Confirmaciones de metas financieras alcanzadas\n'
+                          '• Resúmenes mensuales importantes',
+                          style: TextStyle(
+                            color: AppColors.greyDark,
+                            fontSize: AppSizes.fontSizeS,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.greyDark,
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSizes.spaceL,
+              vertical: AppSizes.spaceS,
+            ),
+          ),
+          child: Text(
+            'Cancelar',
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: AppSizes.fontSizeM,
+            ),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            // Guardar configuración
+            await _saveNotificationSetting(_pushNotificationsEnabled ?? true);
+            
+            if (mounted) {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Icon(
+                        (_pushNotificationsEnabled ?? true)
+                          ? Icons.notifications_active
+                          : Icons.notifications_off,
+                        color: AppColors.white,
+                      ),
+                      SizedBox(width: AppSizes.spaceS),
+                      Expanded(
+                        child: Text(
+                          (_pushNotificationsEnabled ?? true)
+                            ? 'Notificaciones activadas correctamente'
+                            : 'Notificaciones desactivadas correctamente',
+                          style: TextStyle(color: AppColors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: (_pushNotificationsEnabled ?? true)
+                    ? AppColors.greenJade 
+                    : AppColors.redCoral,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                  ),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.yellowPastel,
+            foregroundColor: AppColors.white,
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSizes.spaceL,
+              vertical: AppSizes.spaceS,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusS),
+            ),
+          ),
+          child: Text(
+            'Guardar',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: AppSizes.fontSizeM,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
