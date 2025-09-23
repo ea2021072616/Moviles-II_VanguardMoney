@@ -79,7 +79,7 @@ class ServicioBusquedaTransacciones {
     CriteriosBusqueda criterios,
   ) {
     List<TransaccionItem> resultados = List.from(transacciones);
-
+    
     // Filtrar por tipo de transacción
     if (criterios.tipoFiltro != TipoFiltro.todos) {
       resultados = _filtrarPorTipo(resultados, criterios.tipoFiltro);
@@ -137,11 +137,38 @@ class ServicioBusquedaTransacciones {
     DateTime? fechaFin,
   ) {
     return transacciones.where((transaccion) {
-      bool cumpleInicio = fechaInicio == null || 
-          transaccion.fecha.isAfter(fechaInicio.subtract(const Duration(days: 1)));
-      bool cumpleFin = fechaFin == null || 
-          transaccion.fecha.isBefore(fechaFin.add(const Duration(days: 1)));
-      return cumpleInicio && cumpleFin;
+      // Normalizar fechas eliminando hora, minuto, segundo y milisegundo
+      final fechaTransaccionSoloFecha = DateTime(
+        transaccion.fecha.year,
+        transaccion.fecha.month,
+        transaccion.fecha.day,
+      );
+      
+      bool cumpleRango = true;
+      
+      // Verificar fecha de inicio
+      if (fechaInicio != null) {
+        final fechaInicioSoloFecha = DateTime(
+          fechaInicio.year,
+          fechaInicio.month,
+          fechaInicio.day,
+        );
+        cumpleRango = cumpleRango && 
+                     !fechaTransaccionSoloFecha.isBefore(fechaInicioSoloFecha);
+      }
+      
+      // Verificar fecha de fin
+      if (fechaFin != null) {
+        final fechaFinSoloFecha = DateTime(
+          fechaFin.year,
+          fechaFin.month,
+          fechaFin.day,
+        );
+        cumpleRango = cumpleRango && 
+                     !fechaTransaccionSoloFecha.isAfter(fechaFinSoloFecha);
+      }
+      
+      return cumpleRango;
     }).toList();
   }
 
@@ -210,11 +237,10 @@ class ServicioBusquedaTransacciones {
   ) {
     final hoy = DateTime.now();
     final inicioHoy = DateTime(hoy.year, hoy.month, hoy.day);
-    final finHoy = inicioHoy.add(const Duration(days: 1));
     
     final criterios = CriteriosBusqueda(
       fechaInicio: inicioHoy,
-      fechaFin: finHoy,
+      fechaFin: inicioHoy, // Mismo día para inicio y fin
     );
     
     return filtrarTransacciones(transacciones, criterios);

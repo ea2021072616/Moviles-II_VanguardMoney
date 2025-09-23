@@ -44,6 +44,11 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
+  // Método para formatear fechas solo día/mes/año (para filtros)
+  String _formatDateOnly(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<VerTransaccionesViewModel>(
@@ -73,39 +78,6 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
               ),
               tooltip: _mostrarFiltros ? 'Ocultar filtros' : 'Mostrar filtros',
             ),
-            // Indicador de filtros activos
-            if (_criteriosBusqueda.tienesFiltrosActivos)
-              Container(
-                margin: const EdgeInsets.only(right: 8),
-                child: Stack(
-                  children: [
-                    IconButton(
-                      onPressed: _limpiarFiltros,
-                      icon: const Icon(Icons.clear_all, color: AppColors.white),
-                      tooltip: 'Limpiar filtros',
-                    ),
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: AppColors.redCoral,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '${_criteriosBusqueda.cantidadFiltrosActivos}',
-                          style: const TextStyle(
-                            color: AppColors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             IconButton(
               onPressed: _refrescarDatos,
               icon: const Icon(Icons.refresh, color: AppColors.white),
@@ -558,7 +530,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                       const SizedBox(width: 8),
                       Text(
                         _criteriosBusqueda.fechaInicio != null
-                            ? _formatDate(_criteriosBusqueda.fechaInicio!)
+                            ? _formatDateOnly(_criteriosBusqueda.fechaInicio!)
                             : 'Fecha inicio',
                         style: TextStyle(
                           color: _criteriosBusqueda.fechaInicio != null
@@ -589,7 +561,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                       const SizedBox(width: 8),
                       Text(
                         _criteriosBusqueda.fechaFin != null
-                            ? _formatDate(_criteriosBusqueda.fechaFin!)
+                            ? _formatDateOnly(_criteriosBusqueda.fechaFin!)
                             : 'Fecha fin',
                         style: TextStyle(
                           color: _criteriosBusqueda.fechaFin != null
@@ -603,12 +575,6 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                 ),
               ),
             ),
-            if (_criteriosBusqueda.fechaInicio != null || _criteriosBusqueda.fechaFin != null)
-              IconButton(
-                onPressed: _limpiarFiltrosFecha,
-                icon: const Icon(Icons.clear, color: AppColors.redCoral),
-                tooltip: 'Limpiar fechas',
-              ),
           ],
         ),
       ],
@@ -704,7 +670,6 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
           : (_criteriosBusqueda.fechaFin ?? DateTime.now()),
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
-      locale: const Locale('es', 'ES'),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -727,15 +692,6 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
         }
       });
     }
-  }
-
-  void _limpiarFiltrosFecha() {
-    setState(() {
-      _criteriosBusqueda = _criteriosBusqueda.copyWith(
-        fechaInicio: null,
-        fechaFin: null,
-      );
-    });
   }
 
   void _limpiarFiltros() {
