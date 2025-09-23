@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/Ver_transacciones_viewmodel.dart';
-import '../services/busqueda.dart';
+import '../services/filtros.dart';
 import '../../../core/theme/app_colors.dart';
 
 class VerTransaccionesView extends StatefulWidget {
@@ -652,7 +652,13 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
 
   void _actualizarFiltroCategoria(String? categoria) {
     setState(() {
-      _criteriosBusqueda = _criteriosBusqueda.copyWith(categoriaFiltro: categoria);
+      if (categoria == null) {
+        // Cuando se selecciona "Todas las categorías", limpiar el filtro
+        _criteriosBusqueda = _criteriosBusqueda.copyWith(limpiarCategoria: true);
+      } else {
+        // Cuando se selecciona una categoría específica
+        _criteriosBusqueda = _criteriosBusqueda.copyWith(categoriaFiltro: categoria);
+      }
     });
   }
 

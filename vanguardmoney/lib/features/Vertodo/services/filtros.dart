@@ -37,12 +37,15 @@ class CriteriosBusqueda {
     DateTime? fechaInicio,
     DateTime? fechaFin,
     CriterioOrden? criterioOrden,
+    bool? limpiarCategoria,
+    bool? limpiarFechaInicio,
+    bool? limpiarFechaFin,
   }) {
     return CriteriosBusqueda(
       tipoFiltro: tipoFiltro ?? this.tipoFiltro,
-      categoriaFiltro: categoriaFiltro ?? this.categoriaFiltro,
-      fechaInicio: fechaInicio ?? this.fechaInicio,
-      fechaFin: fechaFin ?? this.fechaFin,
+      categoriaFiltro: limpiarCategoria == true ? null : (categoriaFiltro ?? this.categoriaFiltro),
+      fechaInicio: limpiarFechaInicio == true ? null : (fechaInicio ?? this.fechaInicio),
+      fechaFin: limpiarFechaFin == true ? null : (fechaFin ?? this.fechaFin),
       criterioOrden: criterioOrden ?? this.criterioOrden,
     );
   }
