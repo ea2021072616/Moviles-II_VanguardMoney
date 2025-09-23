@@ -87,6 +87,51 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
     }
   }
 
+  /// Actualizar la edad
+  void updateEdad(int? edad) {
+    final updatedProfile = state.profile.copyWith(edad: edad);
+    state = state.copyWithProfile(updatedProfile);
+
+    // Limpiar errores de validación previos
+    if (state.validationErrors.isNotEmpty) {
+      _validateProfile();
+    }
+  }
+
+  /// Actualizar la ocupación
+  void updateOcupacion(String? ocupacion) {
+    final updatedProfile = state.profile.copyWith(ocupacion: ocupacion);
+    state = state.copyWithProfile(updatedProfile);
+
+    // Limpiar errores de validación previos
+    if (state.validationErrors.isNotEmpty) {
+      _validateProfile();
+    }
+  }
+
+  /// Actualizar el ingreso mensual aproximado
+  void updateIngresoMensualAprox(double? ingresoMensualAprox) {
+    final updatedProfile = state.profile.copyWith(ingresoMensualAprox: ingresoMensualAprox);
+    state = state.copyWithProfile(updatedProfile);
+
+    // Limpiar errores de validación previos
+    if (state.validationErrors.isNotEmpty) {
+      _validateProfile();
+    }
+  }
+
+  /// Actualizar el ingreso mensual desde un string (útil para TextFields)
+  void updateIngresoMensualAproxFromString(String ingresoText) {
+    final ingreso = double.tryParse(ingresoText.replaceAll(',', ''));
+    updateIngresoMensualAprox(ingreso);
+  }
+
+  /// Actualizar la edad desde un string (útil para TextFields)
+  void updateEdadFromString(String edadText) {
+    final edad = int.tryParse(edadText);
+    updateEdad(edad);
+  }
+
   /// Actualizar la foto de perfil
   void updatePhotoUrl(String? photoUrl) {
     final updatedProfile = state.profile.copyWith(photoUrl: photoUrl);
@@ -136,6 +181,9 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
             final updatedProfile = userProfile.copyWith(
               username: state.profile.username,
               currency: state.profile.currency,
+              edad: state.profile.edad,
+              ocupacion: state.profile.ocupacion,
+              ingresoMensualAprox: state.profile.ingresoMensualAprox,
             );
 
             // Actualizar perfil usando el método correcto del repository
@@ -181,6 +229,43 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
   void clearErrors() {
     if (state.status == EditProfileStatus.error) {
       state = state.copyWithProfile(state.profile);
+    }
+  }
+
+  /// Getters para acceso fácil a los valores formateados
+
+  /// Obtener la edad como string para mostrar en UI
+  String get edadText => state.profile.edad?.toString() ?? '';
+
+  /// Obtener el ingreso como string formateado para mostrar en UI
+  String get ingresoMensualText {
+    if (state.profile.ingresoMensualAprox == null) return '';
+    return state.profile.ingresoMensualAprox!.toStringAsFixed(2);
+  }
+
+  /// Obtener la ocupación para mostrar en UI
+  String get ocupacionText => state.profile.ocupacion ?? '';
+
+  /// Verificar si el formulario está completo y válido
+  bool get isFormValid => state.profile.isValid;
+
+  /// Verificar si hay cambios pendientes comparando con el perfil original
+  bool hasChanges(UserProfileModel? originalProfile) {
+    if (originalProfile == null) return true;
+    
+    return originalProfile.username != state.profile.username ||
+           originalProfile.currency != state.profile.currency ||
+           originalProfile.edad != state.profile.edad ||
+           originalProfile.ocupacion != state.profile.ocupacion ||
+           originalProfile.ingresoMensualAprox != state.profile.ingresoMensualAprox;
+  }
+
+  /// Resetear a los valores originales del perfil
+  void resetToOriginal(UserProfileModel? originalProfile) {
+    if (originalProfile != null) {
+      initializeFromUserProfile(originalProfile);
+    } else {
+      reset();
     }
   }
 }

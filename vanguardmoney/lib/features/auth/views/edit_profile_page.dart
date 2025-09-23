@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/utils/form_validators.dart';
@@ -7,12 +8,10 @@ import '../../../core/constants/app_sizes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/exceptions/app_exception.dart';
 import '../../../core/exceptions/error_handler.dart';
-import '../constants/auth_constants.dart';
 import '../models/edit_profile_model.dart';
 import '../models/user_profile_model.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/edit_profile_viewmodel.dart';
-
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
 
@@ -23,27 +22,33 @@ class EditProfilePage extends ConsumerStatefulWidget {
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
-  late String _selectedCurrency;
+  final _edadController = TextEditingController();
+  final _ocupacionController = TextEditingController();
+  final _ingresoController = TextEditingController();
   bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _selectedCurrency = 'S/'; // Valor por defecto válido en AuthConstants
   }
 
   @override
   void dispose() {
     _usernameController.dispose();
+    _edadController.dispose();
+    _ocupacionController.dispose();
+    _ingresoController.dispose();
     super.dispose();
   }
 
   void _initializeForm(UserProfileModel? userProfile) {
     if (!_isInitialized && userProfile != null) {
       _usernameController.text = userProfile.username;
-      _selectedCurrency = userProfile.currency;
+      _edadController.text = userProfile.edad?.toString() ?? '';
+      _ocupacionController.text = userProfile.ocupacion ?? '';
+      _ingresoController.text = userProfile.ingresoMensualAprox?.toStringAsFixed(2) ?? '';
 
-      // Inicializar el provider con los datos actuales
+            // Inicializar el provider con los datos actuales
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref
             .read(editProfileProvider.notifier)
@@ -65,10 +70,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.check_circle, color: AppColors.white),
                 SizedBox(width: AppSizes.spaceXS),
-                Text('Perfil actualizado exitosamente'),
+                Flexible(child: Text('Perfil actualizado exitosamente')),
               ],
             ),
             backgroundColor: AppColors.greenJade,
@@ -104,10 +110,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.error_outline, color: AppColors.white),
                 SizedBox(width: AppSizes.spaceXS),
-                Expanded(child: Text(errorMessage)),
+                Flexible(child: Text(errorMessage)),
               ],
             ),
             backgroundColor: AppColors.redCoral,
@@ -141,7 +148,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         foregroundColor: AppColors.white,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.white),
-          onPressed: () => context.pop(),
+          onPressed: () => _handleCancel(context),
         ),
       ),
       body: userProfileAsync.when(
@@ -218,8 +225,18 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
               SizedBox(height: AppSizes.spaceL),
 
-              // Selector de moneda
-              _buildCurrencySelector(context),
+              // Campo de edad
+              _buildEdadField(context),
+
+              SizedBox(height: AppSizes.spaceL),
+
+              // Campo de ocupación
+              _buildOcupacionField(context),
+
+              SizedBox(height: AppSizes.spaceL),
+
+              // Campo de ingreso mensual
+              _buildIngresoMensualField(context),
 
               SizedBox(height: AppSizes.spaceL),
 
@@ -348,60 +365,161 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
-  Widget _buildCurrencySelector(BuildContext context) {
+  Widget _buildEdadField(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Moneda preferida',
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+          'Edad',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _selectedCurrency,
+        TextFormField(
+          controller: _edadController,
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.attach_money),
+            hintText: 'Ingresa tu edad (opcional)',
+            prefixIcon: const Icon(Icons.cake_outlined),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
             fillColor: Theme.of(context).colorScheme.surface,
           ),
-          items: AuthConstants.currencies.map((currency) {
-            return DropdownMenuItem<String>(
-              value: currency['code'],
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    currency['code']!,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      currency['name']!,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                _selectedCurrency = value;
-              });
-              ref.read(editProfileProvider.notifier).updateCurrency(value);
-            }
-          },
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(3),
+          ],
           validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Por favor selecciona una moneda';
+            // CAMPO OPCIONAL - no requerido
+            if (value == null || value.trim().isEmpty) {
+              return null; // Permitir valores vacíos
+            }
+            final edad = int.tryParse(value);
+            if (edad == null) {
+              return 'Ingresa una edad válida';
+            }
+            if (edad <= 0 || edad > 120) {
+              return 'La edad debe estar entre 1 y 120 años';
             }
             return null;
           },
+          onChanged: (value) {
+            ref.read(editProfileProvider.notifier).updateEdadFromString(value);
+          },
+          textInputAction: TextInputAction.next,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOcupacionField(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ocupación',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _ocupacionController,
+          decoration: InputDecoration(
+            hintText: 'Ej: Estudiante, Ingeniero, etc. (opcional)',
+            prefixIcon: const Icon(Icons.work_outline),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surface,
+          ),
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(50),
+            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s]')),
+          ],
+          validator: (value) {
+            // CAMPO OPCIONAL - no requerido
+            if (value == null || value.trim().isEmpty) {
+              return null; // Permitir valores vacíos
+            }
+            if (value.trim().length < 2) {
+              return 'La ocupación debe tener al menos 2 caracteres';
+            }
+            if (value.trim().length > 50) {
+              return 'La ocupación no puede tener más de 50 caracteres';
+            }
+            return null;
+          },
+          onChanged: (value) {
+            ref.read(editProfileProvider.notifier).updateOcupacion(value.trim());
+          },
+          textInputAction: TextInputAction.next,
+          textCapitalization: TextCapitalization.words,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIngresoMensualField(BuildContext context) {
+    final userProfileAsync = ref.watch(currentUserProfileProvider);
+    final userCurrency = userProfileAsync.value?.currency ?? 'S/';
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ingreso Mensual Aproximado',
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _ingresoController,
+          decoration: InputDecoration(
+            hintText: 'Ej: 2500.00 (opcional)',
+            prefixIcon: const Icon(Icons.monetization_on_outlined),
+            suffixText: userCurrency,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surface,
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+            LengthLimitingTextInputFormatter(12), // Para números grandes pero razonables
+          ],
+          validator: (value) {
+            // CAMPO OPCIONAL - no requerido
+            if (value == null || value.trim().isEmpty) {
+              return null; // Permitir valores vacíos
+            }
+            final ingreso = double.tryParse(value.replaceAll(',', ''));
+            if (ingreso == null) {
+              return 'Ingresa un monto válido';
+            }
+            if (ingreso < 0) {
+              return 'El ingreso no puede ser negativo';
+            }
+            if (ingreso > 999999999) {
+              return 'El monto es demasiado alto';
+            }
+            return null;
+          },
+          onChanged: (value) {
+            ref.read(editProfileProvider.notifier).updateIngresoMensualAproxFromString(value);
+          },
+          textInputAction: TextInputAction.done,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Monto aproximado en $userCurrency (opcional)',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -554,7 +672,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   Widget _buildCancelButton(BuildContext context) {
     return OutlinedButton(
-      onPressed: () => context.pop(),
+      onPressed: () => _handleCancel(context),
       style: OutlinedButton.styleFrom(
         padding: EdgeInsets.symmetric(vertical: AppSizes.spaceM),
         shape: RoundedRectangleBorder(
@@ -573,30 +691,142 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
-  Future<void> _handleSave() async {
-    if (_formKey.currentState?.validate() ?? false) {
-      final success = await ref
+  void _handleCancel(BuildContext context) async {
+    final userProfileAsync = ref.read(currentUserProfileProvider);
+    
+    if (userProfileAsync.hasValue) {
+      final hasChanges = ref
           .read(editProfileProvider.notifier)
-          .saveProfile();
-
-      if (success && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Perfil actualizado exitosamente'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-
-        // Volver a la página anterior
+          .hasChanges(userProfileAsync.value);
+          
+      if (hasChanges) {
+        final shouldDiscard = await _showDiscardChangesDialog(context);
+        if (shouldDiscard && mounted) {
+          context.pop();
+        }
+      } else {
         context.pop();
       }
+    } else {
+      // Si está cargando o hay error, simplemente salir
+      context.pop();
+    }
+  }
+
+  Future<bool> _showDiscardChangesDialog(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_outlined, color: Colors.orange),
+            const SizedBox(width: 8),
+            const Text('Cambios sin guardar'),
+          ],
+        ),
+        content: const Text(
+          '¿Estás seguro de que deseas descartar los cambios realizados?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Continuar editando'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Descartar cambios'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
+  Future<void> _handleSave() async {
+    // Limpiar errores previos
+    ref.read(editProfileProvider.notifier).clearErrors();
+    
+    if (_formKey.currentState?.validate() ?? false) {
+      // Mostrar indicador de carga
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      
+      try {
+        final success = await ref
+            .read(editProfileProvider.notifier)
+            .saveProfile();
+
+        if (success && mounted) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Flexible(child: Text('Perfil actualizado exitosamente')),
+                ],
+              ),
+              backgroundColor: AppColors.greenJade,
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+            ),
+          );
+
+          // Volver a la página anterior
+          if (mounted) context.pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          scaffoldMessenger.showSnackBar(
+            SnackBar(
+              content: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, color: AppColors.white),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text('Error al guardar: ${e.toString()}'),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.redCoral,
+              duration: const Duration(seconds: 5),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusM),
+              ),
+              action: SnackBarAction(
+                label: 'Reintentar',
+                textColor: AppColors.white,
+                onPressed: () => _handleSave(),
+              ),
+            ),
+          );
+        }
+      }
+    } else {
+      // Si hay errores de validación, mostrar mensaje
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning_outlined, color: Colors.white),
+              SizedBox(width: 8),
+              Flexible(child: Text('Por favor corrige los errores en el formulario')),
+            ],
+          ),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 

@@ -6,6 +6,7 @@ import '../../../../core/constants/app_routes.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/viewmodels/auth_viewmodel.dart';
+import '../../../auth/viewmodels/edit_profile_viewmodel.dart';
 import '../../../auth/constants/auth_constants.dart';
 
 class ProfileDrawer extends ConsumerWidget {
@@ -45,7 +46,7 @@ class ProfileDrawer extends ConsumerWidget {
                   Icons.attach_money_outlined,
                   Icons.attach_money,
                   'Configurar Moneda',
-                  () => _showCurrencyDialog(context),
+                  () => _showCurrencyDialog(context, ref),
                   color: AppColors.greenJade,
                 ),
                 _buildMenuItem(
@@ -383,8 +384,9 @@ class ProfileDrawer extends ConsumerWidget {
   }
 
   // Dialogo de moneda mejorado
-  void _showCurrencyDialog(BuildContext context) {
-    String selectedCurrency = 'S/';
+  void _showCurrencyDialog(BuildContext context, WidgetRef ref) {
+    final userProfileAsync = ref.read(currentUserProfileProvider);
+    String selectedCurrency = userProfileAsync.value?.currency ?? 'S/';
 
     showDialog(
       context: context,
@@ -492,21 +494,55 @@ class ProfileDrawer extends ConsumerWidget {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Moneda cambiada a $selectedCurrency',
-                      style: TextStyle(color: AppColors.white),
-                    ),
-                    backgroundColor: AppColors.greenJade,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.radiusS),
-                    ),
-                  ),
-                );
+              onPressed: () async {
+                // Actualizar la moneda usando el viewmodel
+                final userProfile = userProfileAsync.value;
+                if (userProfile != null && selectedCurrency != userProfile.currency) {
+                  final editNotifier = ref.read(editProfileProvider.notifier);
+                  
+                  // Inicializar con el perfil actual
+                  editNotifier.initializeFromUserProfile(userProfile);
+                  
+                  // Actualizar solo la moneda
+                  editNotifier.updateCurrency(selectedCurrency);
+                  
+                  // Guardar los cambios
+                  final success = await editNotifier.saveProfile();
+                  
+                  if (success) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Moneda cambiada a $selectedCurrency',
+                          style: TextStyle(color: AppColors.white),
+                        ),
+                        backgroundColor: AppColors.greenJade,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                        ),
+                      ),
+                    );
+                  } else {
+                    // Mostrar error si no se pudo guardar
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Error al cambiar la moneda. Inténtalo de nuevo.',
+                          style: TextStyle(color: AppColors.white),
+                        ),
+                        backgroundColor: AppColors.redCoral,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSizes.radiusS),
+                        ),
+                      ),
+                    );
+                  }
+                } else {
+                  Navigator.of(context).pop();
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.greenJade,

@@ -6,6 +6,9 @@ class UserProfileModel {
   final String username;
   final String email;
   final String currency;
+  final int? edad;
+  final String? ocupacion;
+  final double? ingresoMensualAprox;
   final DateTime createdAt;
   final bool verified;
   final int loginAttempts;
@@ -16,6 +19,9 @@ class UserProfileModel {
     required this.username,
     required this.email,
     required this.currency,
+    this.edad,
+    this.ocupacion,
+    this.ingresoMensualAprox,
     required this.createdAt,
     required this.verified,
     this.loginAttempts = 0,
@@ -28,6 +34,9 @@ class UserProfileModel {
     required String email,
     required String username,
     required String currency,
+    int? edad,
+    String? ocupacion,
+    double? ingresoMensualAprox,
     bool verified = false,
   }) {
     return UserProfileModel(
@@ -35,6 +44,9 @@ class UserProfileModel {
       username: username,
       email: email,
       currency: currency,
+      edad: edad,
+      ocupacion: ocupacion,
+      ingresoMensualAprox: ingresoMensualAprox,
       createdAt: DateTime.now(),
       verified: verified,
       loginAttempts: 0,
@@ -48,6 +60,9 @@ class UserProfileModel {
       username: map['username'] ?? '',
       email: map['email'] ?? '',
       currency: map['currency'] ?? 'S/',
+      edad: map['edad']?.toInt(),
+      ocupacion: map['ocupacion'],
+      ingresoMensualAprox: map['ingresoMensualAprox']?.toDouble(),
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       verified: map['verified'] ?? false,
       loginAttempts: map['loginAttempts'] ?? 0,
@@ -62,6 +77,9 @@ class UserProfileModel {
       'username': username,
       'email': email,
       'currency': currency,
+      'edad': edad,
+      'ocupacion': ocupacion,
+      'ingresoMensualAprox': ingresoMensualAprox,
       'createdAt': Timestamp.fromDate(createdAt),
       'verified': verified,
       'loginAttempts': loginAttempts,
@@ -77,6 +95,9 @@ class UserProfileModel {
     String? username,
     String? email,
     String? currency,
+    int? edad,
+    String? ocupacion,
+    double? ingresoMensualAprox,
     DateTime? createdAt,
     bool? verified,
     int? loginAttempts,
@@ -87,6 +108,9 @@ class UserProfileModel {
       username: username ?? this.username,
       email: email ?? this.email,
       currency: currency ?? this.currency,
+      edad: edad ?? this.edad,
+      ocupacion: ocupacion ?? this.ocupacion,
+      ingresoMensualAprox: ingresoMensualAprox ?? this.ingresoMensualAprox,
       createdAt: createdAt ?? this.createdAt,
       verified: verified ?? this.verified,
       loginAttempts: loginAttempts ?? this.loginAttempts,
@@ -116,7 +140,11 @@ class UserProfileModel {
     return uid.isNotEmpty &&
         username.isNotEmpty &&
         email.isNotEmpty &&
-        currency.isNotEmpty;
+        currency.isNotEmpty &&
+        edad != null &&
+        ocupacion != null &&
+        ocupacion!.isNotEmpty &&
+        ingresoMensualAprox != null;
   }
 
   @override
@@ -131,27 +159,9 @@ class UserProfileModel {
   @override
   String toString() {
     return 'UserProfileModel(uid: $uid, username: $username, email: $email, '
-        'currency: $currency, verified: $verified, loginAttempts: $loginAttempts)';
+        'currency: $currency, edad: $edad, ocupacion: $ocupacion, '
+        'ingresoMensualAprox: $ingresoMensualAprox, verified: $verified, '
+        'loginAttempts: $loginAttempts)';
   }
 }
 
-/// Constantes para las monedas soportadas
-class SupportedCurrencies {
-  static const List<Map<String, String>> currencies = [
-    {'code': 'S/', 'name': 'Sol Peruano'},
-    {'code': '\$', 'name': 'Dólar Americano'},
-    {'code': '€', 'name': 'Euro'},
-    {'code': '£', 'name': 'Libra Esterlina'},
-    {'code': '¥', 'name': 'Yen Japonés'},
-    {'code': 'C\$', 'name': 'Dólar Canadiense'},
-    {'code': 'A\$', 'name': 'Dólar Australiano'},
-  ];
-
-  static String getNameByCode(String code) {
-    final currency = currencies.firstWhere(
-      (currency) => currency['code'] == code,
-      orElse: () => {'code': code, 'name': code},
-    );
-    return currency['name'] ?? code;
-  }
-}

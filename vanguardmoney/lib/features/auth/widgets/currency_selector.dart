@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/constants/app_sizes.dart';
 import '../constants/auth_constants.dart';
 
 class CurrencySelector extends StatelessWidget {
@@ -7,56 +6,84 @@ class CurrencySelector extends StatelessWidget {
     super.key,
     required this.selectedCurrency,
     required this.onChanged,
+    this.label = 'Moneda preferida',
+    this.hintText = 'Selecciona una moneda',
+    this.validator,
+    this.showFullName = true,
   });
 
   final String selectedCurrency;
   final ValueChanged<String?> onChanged;
+  final String label;
+  final String hintText;
+  final String? Function(String?)? validator;
+  final bool showFullName;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        border: Border.all(color: Colors.black26),
-        color: Theme.of(context).colorScheme.surface,
-      ),
-      child: DropdownButtonFormField<String>(
-        value: selectedCurrency,
-        decoration: InputDecoration(
-          labelText: 'Moneda',
-          prefixIcon: Icon(
-            Icons.monetization_on_outlined,
-            color: Colors.black54,
-          ),
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: AppSizes.spaceM,
-            vertical: AppSizes.spaceS,
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context)
+              .textTheme
+              .titleMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
-        items: AuthConstants.currencies.map((currency) {
-          return DropdownMenuItem<String>(
-            value: currency['code'],
-            child: Text(
-              currency['name']!,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          );
-        }).toList(),
-        onChanged: onChanged,
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return 'Por favor selecciona una moneda';
-          }
-          return null;
-        },
-        dropdownColor: Theme.of(context).colorScheme.surface,
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurface,
-          fontSize: 16,
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: selectedCurrency.isNotEmpty ? selectedCurrency : null,
+          decoration: InputDecoration(
+            hintText: hintText,
+            prefixIcon: const Icon(Icons.attach_money),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surface,
+          ),
+          items: AuthConstants.currencies.map((currency) {
+            return DropdownMenuItem<String>(
+              value: currency['code'],
+              child: showFullName
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          currency['code']!,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            currency['name']!,
+                            style: const TextStyle(fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      currency['name']!,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+            );
+          }).toList(),
+          onChanged: onChanged,
+          validator: validator ??
+              (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Por favor selecciona una moneda';
+                }
+                return null;
+              },
+          dropdownColor: Theme.of(context).colorScheme.surface,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 16,
+          ),
+          icon: const Icon(Icons.arrow_drop_down),
         ),
-        icon: Icon(Icons.arrow_drop_down, color: Colors.black54),
-      ),
+      ],
     );
   }
 }
