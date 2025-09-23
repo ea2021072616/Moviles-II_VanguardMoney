@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
+import '../../../core/constants/app_routes.dart';
 
 // VISTA ESPECÍFICA DEL HOME - Dashboard principal
 class HomeView extends ConsumerWidget {
@@ -207,7 +209,7 @@ class HomeView extends ConsumerWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    // TODO: Navegar a historial completo
+                    context.push(AppRoutes.transactions);
                   },
                   child: const Text('Ver todas'),
                 ),
