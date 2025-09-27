@@ -111,7 +111,9 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
 
   /// Actualizar el ingreso mensual aproximado
   void updateIngresoMensualAprox(double? ingresoMensualAprox) {
-    final updatedProfile = state.profile.copyWith(ingresoMensualAprox: ingresoMensualAprox);
+    final updatedProfile = state.profile.copyWith(
+      ingresoMensualAprox: ingresoMensualAprox,
+    );
     state = state.copyWithProfile(updatedProfile);
 
     // Limpiar errores de validación previos
@@ -162,6 +164,60 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
       return false;
     }
 
+    return await _saveToFirestore();
+  }
+
+  /// Método específico para actualizar solo la moneda sin validación completa
+  Future<bool> saveCurrencyOnly(String currency) async {
+    final currentUser = _ref.read(currentUserProvider);
+    final currentUserProfileAsync = _ref.read(currentUserProfileProvider);
+
+    if (currentUser == null) {
+      state = state.copyWithError('Usuario no autenticado');
+      return false;
+    }
+
+    state = state.copyWithLoading();
+
+    try {
+      await currentUserProfileAsync.when(
+        data: (userProfile) async {
+          if (userProfile != null) {
+            // Solo actualizar la moneda
+            final updatedProfile = userProfile.copyWith(currency: currency);
+            await _authRepository.updateUserProfile(updatedProfile);
+
+            // Invalidar el cache del perfil para que se recargue
+            _ref.invalidate(currentUserProfileProvider);
+
+            state = state.copyWithSuccess();
+          } else {
+            state = state.copyWithError('No se pudo cargar el perfil actual');
+          }
+        },
+        loading: () async {
+          state = state.copyWithError('Cargando perfil...');
+        },
+        error: (error, stack) async {
+          state = state.copyWithError('Error al cargar el perfil');
+        },
+      );
+
+      return state.status == EditProfileStatus.success;
+    } catch (e) {
+      String errorMessage = 'Error al actualizar la moneda';
+      if (e is AuthException) {
+        errorMessage = e.message;
+      } else {
+        errorMessage = 'Error inesperado: $e';
+      }
+      state = state.copyWithError(errorMessage);
+      return false;
+    }
+  }
+
+  /// Método privado común para guardar en Firestore
+  Future<bool> _saveToFirestore() async {
     final currentUser = _ref.read(currentUserProvider);
     final currentUserProfileAsync = _ref.read(currentUserProfileProvider);
 
@@ -252,12 +308,13 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
   /// Verificar si hay cambios pendientes comparando con el perfil original
   bool hasChanges(UserProfileModel? originalProfile) {
     if (originalProfile == null) return true;
-    
+
     return originalProfile.username != state.profile.username ||
-           originalProfile.currency != state.profile.currency ||
-           originalProfile.edad != state.profile.edad ||
-           originalProfile.ocupacion != state.profile.ocupacion ||
-           originalProfile.ingresoMensualAprox != state.profile.ingresoMensualAprox;
+        originalProfile.currency != state.profile.currency ||
+        originalProfile.edad != state.profile.edad ||
+        originalProfile.ocupacion != state.profile.ocupacion ||
+        originalProfile.ingresoMensualAprox !=
+            state.profile.ingresoMensualAprox;
   }
 
   /// Resetear a los valores originales del perfil

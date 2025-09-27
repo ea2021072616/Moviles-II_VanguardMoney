@@ -12,7 +12,6 @@ class VerTransaccionesView extends StatefulWidget {
 }
 
 class _VerTransaccionesViewState extends State<VerTransaccionesView> {
-  late VerTransaccionesViewModel _viewModel;
   late ServicioBusquedaTransacciones _servicioBusqueda;
   CriteriosBusqueda _criteriosBusqueda = const CriteriosBusqueda();
   bool _mostrarFiltros = false;
@@ -20,23 +19,17 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
   @override
   void initState() {
     super.initState();
-    _viewModel = VerTransaccionesViewModel();
     _servicioBusqueda = ServicioBusquedaTransacciones();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _cargarDatos();
-    });
-  }
-
-  Future<void> _cargarDatos() async {
-    await _viewModel.cargarTransacciones();
   }
 
   // Método para formatear números como moneda
   String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(2).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match m) => '${m[1]},',
-    );
+    return amount
+        .toStringAsFixed(2)
+        .replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        );
   }
 
   // Método para formatear fechas
@@ -52,7 +45,14 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<VerTransaccionesViewModel>(
-      create: (_) => _viewModel,
+      create: (context) {
+        final viewModel = VerTransaccionesViewModel();
+        // Cargar datos después de crear el ViewModel
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          viewModel.cargarTransacciones();
+        });
+        return viewModel;
+      },
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -79,7 +79,10 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
               tooltip: _mostrarFiltros ? 'Ocultar filtros' : 'Mostrar filtros',
             ),
             IconButton(
-              onPressed: _refrescarDatos,
+              onPressed: () {
+                final viewModel = context.read<VerTransaccionesViewModel>();
+                _refrescarDatos(viewModel);
+              },
               icon: const Icon(Icons.refresh, color: AppColors.white),
               tooltip: 'Actualizar',
             ),
@@ -97,11 +100,15 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
             );
           },
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: _refrescarDatos,
-          backgroundColor: AppColors.blueClassic,
-          child: const Icon(Icons.add, color: AppColors.white),
-          tooltip: 'Agregar transacción',
+        floatingActionButton: Consumer<VerTransaccionesViewModel>(
+          builder: (context, viewModel, child) {
+            return FloatingActionButton(
+              onPressed: () => _refrescarDatos(viewModel),
+              backgroundColor: AppColors.blueClassic,
+              child: const Icon(Icons.add, color: AppColors.white),
+              tooltip: 'Agregar transacción',
+            );
+          },
         ),
       ),
     );
@@ -119,10 +126,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
             SizedBox(height: 16),
             Text(
               'Cargando transacciones...',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.greyDark,
-              ),
+              style: TextStyle(fontSize: 16, color: AppColors.greyDark),
             ),
           ],
         ),
@@ -134,11 +138,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.redCoral,
-            ),
+            Icon(Icons.error_outline, size: 64, color: AppColors.redCoral),
             const SizedBox(height: 16),
             Text(
               'Error al cargar transacciones',
@@ -154,15 +154,15 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
               child: Text(
                 viewModel.error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.greyDark,
-                ),
+                style: const TextStyle(fontSize: 14, color: AppColors.greyDark),
               ),
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: _refrescarDatos,
+              onPressed: () {
+                final viewModel = context.read<VerTransaccionesViewModel>();
+                _refrescarDatos(viewModel);
+              },
               icon: const Icon(Icons.refresh),
               label: const Text('Reintentar'),
               style: ElevatedButton.styleFrom(
@@ -212,10 +212,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
             const SizedBox(height: 8),
             Text(
               descripcion,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.greyDark,
-              ),
+              style: TextStyle(fontSize: 14, color: AppColors.greyDark),
             ),
             if (_criteriosBusqueda.tienesFiltrosActivos) ...[
               const SizedBox(height: 16),
@@ -235,7 +232,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
     }
 
     return RefreshIndicator(
-      onRefresh: _refrescarDatos,
+      onRefresh: () => _refrescarDatos(viewModel),
       color: AppColors.blueClassic,
       child: ListView.builder(
         padding: const EdgeInsets.all(16.0),
@@ -250,22 +247,19 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
 
   Widget _buildTransaccionCard(TransaccionItem transaccion) {
     final bool esIngreso = transaccion.tipo == 'ingreso';
-    final Color colorPrincipal = esIngreso ? const Color(0xFF377CC8) : AppColors.redCoral;
+    final Color colorPrincipal = esIngreso
+        ? const Color(0xFF377CC8)
+        : AppColors.redCoral;
     final IconData icono = esIngreso ? Icons.add_circle : Icons.remove_circle;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12.0),
       elevation: 3,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: colorPrincipal.withOpacity(0.3),
-            width: 1,
-          ),
+          border: Border.all(color: colorPrincipal.withOpacity(0.3), width: 1),
         ),
         child: ListTile(
           contentPadding: const EdgeInsets.all(16.0),
@@ -275,11 +269,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
               color: colorPrincipal.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icono,
-              color: colorPrincipal,
-              size: 24,
-            ),
+            child: Icon(icono, color: colorPrincipal, size: 24),
           ),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -311,10 +301,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
               if (transaccion.descripcion.isNotEmpty)
                 Text(
                   transaccion.descripcion,
-                  style: TextStyle(
-                    color: AppColors.greyDark,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: AppColors.greyDark, fontSize: 14),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -329,14 +316,14 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                   const SizedBox(width: 4),
                   Text(
                     _formatDate(transaccion.fecha),
-                    style: TextStyle(
-                      color: AppColors.greyDark,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: AppColors.greyDark, fontSize: 12),
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: colorPrincipal.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
@@ -392,19 +379,19 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Filtro por tipo de transacción
           _buildFiltroTipo(),
           const SizedBox(height: 16),
-          
+
           // Filtro por categoría
           _buildFiltroCategoria(viewModel),
           const SizedBox(height: 16),
-          
+
           // Filtros de fecha
           _buildFiltrosFecha(),
           const SizedBox(height: 16),
-          
+
           // Criterio de ordenamiento
           _buildCriterioOrden(),
         ],
@@ -451,8 +438,10 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
   }
 
   Widget _buildFiltroCategoria(VerTransaccionesViewModel viewModel) {
-    final categorias = _servicioBusqueda.obtenerCategorias(viewModel.transacciones);
-    
+    final categorias = _servicioBusqueda.obtenerCategorias(
+      viewModel.transacciones,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -468,10 +457,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
         if (categorias.isEmpty)
           Text(
             'No hay categorías disponibles',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.greyDark,
-            ),
+            style: TextStyle(fontSize: 12, color: AppColors.greyDark),
           )
         else
           DropdownButtonFormField<String>(
@@ -481,17 +467,22 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 8,
+              ),
             ),
             items: [
               const DropdownMenuItem<String>(
                 value: null,
                 child: Text('Todas las categorías'),
               ),
-              ...categorias.map((categoria) => DropdownMenuItem<String>(
-                value: categoria,
-                child: Text(categoria),
-              )),
+              ...categorias.map(
+                (categoria) => DropdownMenuItem<String>(
+                  value: categoria,
+                  child: Text(categoria),
+                ),
+              ),
             ],
             onChanged: _actualizarFiltroCategoria,
           ),
@@ -526,7 +517,11 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 16, color: AppColors.greyDark),
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: AppColors.greyDark,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         _criteriosBusqueda.fechaInicio != null
@@ -557,7 +552,11 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.calendar_today, size: 16, color: AppColors.greyDark),
+                      const Icon(
+                        Icons.calendar_today,
+                        size: 16,
+                        color: AppColors.greyDark,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         _criteriosBusqueda.fechaFin != null
@@ -654,10 +653,14 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
     setState(() {
       if (categoria == null) {
         // Cuando se selecciona "Todas las categorías", limpiar el filtro
-        _criteriosBusqueda = _criteriosBusqueda.copyWith(limpiarCategoria: true);
+        _criteriosBusqueda = _criteriosBusqueda.copyWith(
+          limpiarCategoria: true,
+        );
       } else {
         // Cuando se selecciona una categoría específica
-        _criteriosBusqueda = _criteriosBusqueda.copyWith(categoriaFiltro: categoria);
+        _criteriosBusqueda = _criteriosBusqueda.copyWith(
+          categoriaFiltro: categoria,
+        );
       }
     });
   }
@@ -692,9 +695,13 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
     if (fechaSeleccionada != null) {
       setState(() {
         if (esInicio) {
-          _criteriosBusqueda = _criteriosBusqueda.copyWith(fechaInicio: fechaSeleccionada);
+          _criteriosBusqueda = _criteriosBusqueda.copyWith(
+            fechaInicio: fechaSeleccionada,
+          );
         } else {
-          _criteriosBusqueda = _criteriosBusqueda.copyWith(fechaFin: fechaSeleccionada);
+          _criteriosBusqueda = _criteriosBusqueda.copyWith(
+            fechaFin: fechaSeleccionada,
+          );
         }
       });
     }
@@ -706,13 +713,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
     });
   }
 
-  Future<void> _refrescarDatos() async {
-    await _viewModel.refrescar();
-  }
-
-  @override
-  void dispose() {
-    _viewModel.dispose();
-    super.dispose();
+  Future<void> _refrescarDatos(VerTransaccionesViewModel viewModel) async {
+    await viewModel.cargarTransacciones();
   }
 }

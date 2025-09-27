@@ -27,7 +27,7 @@ android {
         applicationId = "com.example.vanguardmoney"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23  // Changed from flutter.minSdkVersion to 23 for Firebase Auth compatibility
+        minSdk = 23  // Updated to be compatible with Firebase Auth 23.2.1
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -47,8 +47,8 @@ flutter {
 }
 
 dependencies {
-    // Import the Firebase BoM (using a newer version for better compatibility)
-    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    // Import the Firebase BoM (using the latest version)
+    implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
 
     // Firebase Auth and other services
     implementation("com.google.firebase:firebase-analytics")

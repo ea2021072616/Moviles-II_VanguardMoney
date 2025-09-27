@@ -41,48 +41,48 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCnvrNU7bDwITFRLNv-erxcMkdt1_ebu3Q',
-    appId: '1:604435189510:web:a14c5a363dce1fa080d887',
-    messagingSenderId: '604435189510',
-    projectId: 'vanguardmoney',
-    authDomain: 'vanguardmoney.firebaseapp.com',
-    storageBucket: 'vanguardmoney.firebasestorage.app',
-    measurementId: 'G-MVF5XW1BT5',
+    apiKey: 'AIzaSyC2YyilpaDdfW_RiZR82a93poDyhVTFGGg',
+    appId: '1:236054667859:web:b3d768907d169bcce1dca6',
+    messagingSenderId: '236054667859',
+    projectId: 'vanguardmoney-d173c',
+    authDomain: 'vanguardmoney-d173c.firebaseapp.com',
+    storageBucket: 'vanguardmoney-d173c.firebasestorage.app',
+    measurementId: 'G-F26GG1HTXG',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyARlm413uAueq8wZgaurQRhjxGX_oE9vHY',
-    appId: '1:604435189510:android:7ee15b3e0a774ce280d887',
-    messagingSenderId: '604435189510',
-    projectId: 'vanguardmoney',
-    storageBucket: 'vanguardmoney.firebasestorage.app',
+    apiKey: 'AIzaSyCeVK7TukAO59oid3mqwOXuFCjuZJkIHYU',
+    appId: '1:236054667859:android:09b7d3d27dbe4c97e1dca6',
+    messagingSenderId: '236054667859',
+    projectId: 'vanguardmoney-d173c',
+    storageBucket: 'vanguardmoney-d173c.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBH6GlSGyvC6-idQodkt78uRNHrg5JBU1w',
-    appId: '1:604435189510:ios:fc6f23fd51bfa4fb80d887',
-    messagingSenderId: '604435189510',
-    projectId: 'vanguardmoney',
-    storageBucket: 'vanguardmoney.firebasestorage.app',
+    apiKey: 'AIzaSyB-5WLUHKHQ_jPGFeEnL5ocd5rJdAtD06Q',
+    appId: '1:236054667859:ios:a5761ed282615884e1dca6',
+    messagingSenderId: '236054667859',
+    projectId: 'vanguardmoney-d173c',
+    storageBucket: 'vanguardmoney-d173c.firebasestorage.app',
     iosBundleId: 'com.example.vanguardmoney',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBH6GlSGyvC6-idQodkt78uRNHrg5JBU1w',
-    appId: '1:604435189510:ios:fc6f23fd51bfa4fb80d887',
-    messagingSenderId: '604435189510',
-    projectId: 'vanguardmoney',
-    storageBucket: 'vanguardmoney.firebasestorage.app',
+    apiKey: 'AIzaSyB-5WLUHKHQ_jPGFeEnL5ocd5rJdAtD06Q',
+    appId: '1:236054667859:ios:a5761ed282615884e1dca6',
+    messagingSenderId: '236054667859',
+    projectId: 'vanguardmoney-d173c',
+    storageBucket: 'vanguardmoney-d173c.firebasestorage.app',
     iosBundleId: 'com.example.vanguardmoney',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCnvrNU7bDwITFRLNv-erxcMkdt1_ebu3Q',
-    appId: '1:604435189510:web:59078735ef0a6fa480d887',
-    messagingSenderId: '604435189510',
-    projectId: 'vanguardmoney',
-    authDomain: 'vanguardmoney.firebaseapp.com',
-    storageBucket: 'vanguardmoney.firebasestorage.app',
-    measurementId: 'G-2DM2P3NS44',
+    apiKey: 'AIzaSyC2YyilpaDdfW_RiZR82a93poDyhVTFGGg',
+    appId: '1:236054667859:web:62ce779a959eada3e1dca6',
+    messagingSenderId: '236054667859',
+    projectId: 'vanguardmoney-d173c',
+    authDomain: 'vanguardmoney-d173c.firebaseapp.com',
+    storageBucket: 'vanguardmoney-d173c.firebasestorage.app',
+    measurementId: 'G-4R3F9ZBCEB',
   );
 }

@@ -1,20 +1,20 @@
 {
   "project_info": {
-    "project_number": "604435189510",
-    "project_id": "vanguardmoney",
-    "storage_bucket": "vanguardmoney.firebasestorage.app"
+    "project_number": "236054667859",
+    "project_id": "vanguardmoney-d173c",
+    "storage_bucket": "vanguardmoney-d173c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:604435189510:android:7ee15b3e0a774ce280d887",
+        "mobilesdk_app_id": "1:236054667859:android:09b7d3d27dbe4c97e1dca6",
         "android_client_info": {
           "package_name": "com.example.vanguardmoney"
         }
       },
       "oauth_client": [
         {
-          "client_id": "604435189510-na7jnqqqlb3os6u3hgp92114e0ui9epa.apps.googleusercontent.com",
+          "client_id": "236054667859-nobmvk36lq7c0fh0hbmnpsn543u8rprm.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.vanguardmoney",
@@ -22,24 +22,24 @@
           }
         },
         {
-          "client_id": "604435189510-s7a2f8clehhgbkcli0kcd1bp25lnt06c.apps.googleusercontent.com",
+          "client_id": "236054667859-0hvki4j74fon4leudqq60mlr7o8i0cik.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyARlm413uAueq8wZgaurQRhjxGX_oE9vHY"
+          "current_key": "AIzaSyCeVK7TukAO59oid3mqwOXuFCjuZJkIHYU"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "604435189510-s7a2f8clehhgbkcli0kcd1bp25lnt06c.apps.googleusercontent.com",
+              "client_id": "236054667859-0hvki4j74fon4leudqq60mlr7o8i0cik.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "604435189510-69ji9pp12ee32rlsiist8odm1f3l01i9.apps.googleusercontent.com",
+              "client_id": "236054667859-2thd5k22v4muv937kljgt08ocpomsvir.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
                 "bundle_id": "com.example.vanguardmoney"
