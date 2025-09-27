@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../viewmodels/registrar_ingreso_viewmodel.dart';
+import '../../viewmodels/categoria_viewmodel.dart';
+import '../../models/categoria_model.dart';
 import '../../services/validaciones.dart';
+import '../gestionar_categorias_view.dart';
 
 // Provider para el ViewModel
 final registrarIngresoViewModelProvider =
@@ -9,14 +12,36 @@ final registrarIngresoViewModelProvider =
       (ref) => RegistrarIngresoViewModel(),
     );
 
-class RegisterIngresoView extends ConsumerWidget {
+// Provider para el ViewModel de categorías
+final categoriaIngresoViewModelProvider =
+    ChangeNotifierProvider<CategoriaViewModel>((ref) => CategoriaViewModel());
+
+class RegisterIngresoView extends ConsumerStatefulWidget {
   final String idUsuario;
   const RegisterIngresoView({Key? key, required this.idUsuario})
     : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RegisterIngresoView> createState() =>
+      _RegisterIngresoViewState();
+}
+
+class _RegisterIngresoViewState extends ConsumerState<RegisterIngresoView> {
+  @override
+  void initState() {
+    super.initState();
+    // Cargar categorías al iniciar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(categoriaIngresoViewModelProvider)
+          .cargarCategorias(widget.idUsuario, TipoCategoria.ingreso);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final viewModel = ref.watch(registrarIngresoViewModelProvider);
+    final categoriaViewModel = ref.watch(categoriaIngresoViewModelProvider);
     final formKey = GlobalKey<FormState>();
 
     return Scaffold(
@@ -106,23 +131,59 @@ class RegisterIngresoView extends ConsumerWidget {
                     validator: validarDescripcion,
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      labelText: 'Categoría',
-                      prefixIcon: const Icon(Icons.category),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  // Sección de categorías con botón para gestionar
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: InputDecoration(
+                            labelText: 'Categoría',
+                            prefixIcon: const Icon(Icons.category),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          value: viewModel.categoriaSeleccionada,
+                          items: categoriaViewModel
+                              .obtenerNombresCategorias(TipoCategoria.ingreso)
+                              .map(
+                                (cat) => DropdownMenuItem(
+                                  value: cat,
+                                  child: Text(cat),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: viewModel.setCategoria,
+                          validator: validarCategoria,
+                        ),
                       ),
-                    ),
-                    value: viewModel.categoriaSeleccionada,
-                    items: RegistrarIngresoViewModel.categorias
-                        .map(
-                          (cat) =>
-                              DropdownMenuItem(value: cat, child: Text(cat)),
-                        )
-                        .toList(),
-                    onChanged: viewModel.setCategoria,
-                    validator: validarCategoria,
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          onPressed: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => GestionarCategoriasView(
+                                  idUsuario: widget.idUsuario,
+                                  tipo: TipoCategoria.ingreso,
+                                ),
+                              ),
+                            );
+                            // Recargar categorías después de volver
+                            categoriaViewModel.cargarCategorias(
+                              widget.idUsuario,
+                              TipoCategoria.ingreso,
+                            );
+                          },
+                          icon: const Icon(Icons.settings, color: Colors.green),
+                          tooltip: 'Gestionar categorías',
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -165,7 +226,9 @@ class RegisterIngresoView extends ConsumerWidget {
                       ),
                       onPressed: () async {
                         if (formKey.currentState!.validate()) {
-                          await viewModel.guardarIngresoEnFirebase(idUsuario);
+                          await viewModel.guardarIngresoEnFirebase(
+                            widget.idUsuario,
+                          );
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(

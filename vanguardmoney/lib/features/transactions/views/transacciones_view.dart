@@ -10,105 +10,219 @@ class TransaccionesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Card(
-          elevation: 8,
-          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  '¿Qué deseas registrar?',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.indigo,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.add_circle_outline),
-                    label: const Text('Registrar Ingreso'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      textStyle: const TextStyle(fontSize: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.account_balance_wallet,
+                      size: 48,
+                      color: Colors.indigo[600],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '¿Qué deseas registrar?',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
                       ),
                     ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              RegisterIngresoView(idUsuario: idUsuario),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.receipt_long),
-                    label: const Text('Registrar Factura'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.deepOrange,
-                      foregroundColor: Colors.white,
-                      textStyle: const TextStyle(fontSize: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Elige una opción para continuar',
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              RegisterBillView(idUsuario: idUsuario),
-                        ),
-                      );
-                    },
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.camera_alt),
-                    label: const Text('Escanear con IA'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      backgroundColor: Colors.indigo,
-                      foregroundColor: Colors.white,
-                      textStyle: const TextStyle(fontSize: 18),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    onPressed: () {
-                      // Aquí puedes implementar la lógica para abrir la cámara o galería
-                      // y procesar la imagen con IA
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Función de escaneo con IA próximamente',
+              ),
+
+              const SizedBox(height: 20),
+
+              // Opciones de transacciones
+              Expanded(
+                child: Column(
+                  children: [
+                    // Registrar Ingreso
+                    _buildTransactionCard(
+                      context: context,
+                      title: 'Registrar Ingreso',
+                      subtitle: 'Agregar dinero recibido',
+                      icon: Icons.trending_up,
+                      color: Colors.green,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                RegisterIngresoView(idUsuario: idUsuario),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Registrar Egreso
+                    _buildTransactionCard(
+                      context: context,
+                      title: 'Registrar Egreso',
+                      subtitle: 'Agregar gasto realizado',
+                      icon: Icons.trending_down,
+                      color: Colors.deepOrange,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                RegisterBillView(idUsuario: idUsuario),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Escanear con IA
+                    _buildTransactionCard(
+                      context: context,
+                      title: 'Escanear con IA',
+                      subtitle: 'Procesar recibo automáticamente',
+                      icon: Icons.document_scanner,
+                      color: Colors.indigo,
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text(
+                              'Función de escaneo con IA próximamente',
+                            ),
+                            backgroundColor: Colors.indigo,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const Spacer(),
+
+                    // Tip informativo
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.blue[600],
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Tip: Puedes personalizar las categorías desde el botón ⚙️ en cada formulario',
+                              style: TextStyle(
+                                color: Colors.blue[700],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransactionCard({
+    required BuildContext context,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                // Icono
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
                   ),
+                  child: Icon(icon, color: color, size: 28),
+                ),
+
+                const SizedBox(width: 16),
+
+                // Contenido
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Flecha
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.grey[400],
+                  size: 16,
                 ),
               ],
             ),

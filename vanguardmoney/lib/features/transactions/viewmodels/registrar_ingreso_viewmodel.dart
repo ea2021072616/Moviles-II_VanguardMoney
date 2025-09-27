@@ -11,16 +11,6 @@ class RegistrarIngresoViewModel extends ChangeNotifier {
   DateTime? fecha;
   String? categoriaSeleccionada;
 
-  static const List<String> categorias = [
-    'Salario',
-    'Venta',
-    'Regalo',
-    'Devolución',
-    'Intereses',
-    'Premio',
-    'Otro',
-  ];
-
   void setFecha(DateTime? nuevaFecha) {
     fecha = nuevaFecha;
     notifyListeners();

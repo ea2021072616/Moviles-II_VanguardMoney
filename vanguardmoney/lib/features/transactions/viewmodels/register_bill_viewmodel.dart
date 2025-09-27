@@ -10,16 +10,6 @@ class RegisterBillViewModel extends ChangeNotifier {
 
   String? categoriaSeleccionada;
 
-  static const List<String> categorias = [
-    'Servicios básicos',
-    'Alquiler',
-    'Educación',
-    'Salud',
-    'Entretenimiento',
-    'Impuestos',
-    'Otros',
-  ];
-
   void setCategoria(String? nuevaCategoria) {
     categoriaSeleccionada = nuevaCategoria;
     notifyListeners();
@@ -52,5 +42,4 @@ class RegisterBillViewModel extends ChangeNotifier {
         .add(factura.toMap());
     limpiarFormulario();
   }
-
 }

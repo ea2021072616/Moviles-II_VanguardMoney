@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../viewmodels/register_bill_viewmodel.dart';
+import '../../viewmodels/categoria_viewmodel.dart';
+import '../../models/categoria_model.dart';
 import '../../services/validaciones.dart';
+import '../gestionar_categorias_view.dart';
 
 // Provider para el ViewModel
 final registerBillViewModelProvider =
@@ -9,18 +12,40 @@ final registerBillViewModelProvider =
       (ref) => RegisterBillViewModel(),
     );
 
-class RegisterBillView extends ConsumerWidget {
+// Provider para el ViewModel de categorías
+final categoriaViewModelProvider = ChangeNotifierProvider<CategoriaViewModel>(
+  (ref) => CategoriaViewModel(),
+);
+
+class RegisterBillView extends ConsumerStatefulWidget {
   final String idUsuario;
   const RegisterBillView({Key? key, required this.idUsuario}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RegisterBillView> createState() => _RegisterBillViewState();
+}
+
+class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
+  @override
+  void initState() {
+    super.initState();
+    // Cargar categorías al iniciar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(categoriaViewModelProvider)
+          .cargarCategorias(widget.idUsuario, TipoCategoria.egreso);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final viewModel = ref.watch(registerBillViewModelProvider);
+    final categoriaViewModel = ref.watch(categoriaViewModelProvider);
     final formKey = GlobalKey<FormState>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registrar Factura'),
+        title: const Text('Registrar Egreso'),
         backgroundColor: Colors.deepOrange,
         centerTitle: true,
         elevation: 4,
@@ -40,7 +65,7 @@ class RegisterBillView extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    'Datos de la Factura',
+                    'Datos del Egreso',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -97,23 +122,62 @@ class RegisterBillView extends ConsumerWidget {
                     validator: validarLugarLocal,
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    decoration: InputDecoration(
-                      labelText: 'Categoría',
-                      prefixIcon: const Icon(Icons.category),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  // Sección de categorías con botón para gestionar
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          decoration: InputDecoration(
+                            labelText: 'Categoría',
+                            prefixIcon: const Icon(Icons.category),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          value: viewModel.categoriaSeleccionada,
+                          items: categoriaViewModel
+                              .obtenerNombresCategorias(TipoCategoria.egreso)
+                              .map(
+                                (cat) => DropdownMenuItem(
+                                  value: cat,
+                                  child: Text(cat),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: viewModel.setCategoria,
+                          validator: validarCategoria,
+                        ),
                       ),
-                    ),
-                    value: viewModel.categoriaSeleccionada,
-                    items: RegisterBillViewModel.categorias
-                        .map(
-                          (cat) =>
-                              DropdownMenuItem(value: cat, child: Text(cat)),
-                        )
-                        .toList(),
-                    onChanged: viewModel.setCategoria,
-                    validator: validarCategoria,
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.deepOrange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          onPressed: () async {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => GestionarCategoriasView(
+                                  idUsuario: widget.idUsuario,
+                                  tipo: TipoCategoria.egreso,
+                                ),
+                              ),
+                            );
+                            // Recargar categorías después de volver
+                            categoriaViewModel.cargarCategorias(
+                              widget.idUsuario,
+                              TipoCategoria.egreso,
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.settings,
+                            color: Colors.deepOrange,
+                          ),
+                          tooltip: 'Gestionar categorías',
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 28),
                   SizedBox(
@@ -132,12 +196,14 @@ class RegisterBillView extends ConsumerWidget {
                       ),
                       onPressed: () async {
                         if (formKey.currentState!.validate()) {
-                          await viewModel.guardarFacturaEnFirebase(idUsuario);
+                          await viewModel.guardarFacturaEnFirebase(
+                            widget.idUsuario,
+                          );
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  'Factura registrada correctamente',
+                                  'Egreso registrado correctamente',
                                 ),
                               ),
                             );
