@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,19 +14,32 @@ class AuthRepository {
   final GoogleSignIn _googleSignIn;
   final FirebaseFirestore _firestore;
 
+  // StreamController para controlar manualmente las actualizaciones del usuario
+  final StreamController<UserModel?> _userController =
+      StreamController<UserModel?>.broadcast();
+
   AuthRepository({
     FirebaseAuth? firebaseAuth,
     GoogleSignIn? googleSignIn,
     FirebaseFirestore? firestore,
   }) : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance,
        _googleSignIn = googleSignIn ?? GoogleSignIn(),
-       _firestore = firestore ?? FirebaseFirestore.instance;
+       _firestore = firestore ?? FirebaseFirestore.instance {
+    // Escuchar cambios en Firebase Auth y propagar al stream personalizado
+    _firebaseAuth.authStateChanges().listen((User? user) {
+      final userModel = user != null ? UserModel.fromFirebaseUser(user) : null;
+      _userController.add(userModel);
+    });
+  }
 
   /// Stream que escucha cambios en el estado de autenticación
   Stream<UserModel?> get authStateChanges {
-    return _firebaseAuth.authStateChanges().map(
-      (User? user) => user != null ? UserModel.fromFirebaseUser(user) : null,
-    );
+    return _userController.stream;
+  }
+
+  /// Dispose del StreamController
+  void dispose() {
+    _userController.close();
   }
 
   /// Usuario actual (si existe)
@@ -238,6 +252,34 @@ class AuthRepository {
       if (profile.username != user.displayName) {
         await user.updateDisplayName(profile.username);
         await user.reload();
+      }
+    } catch (e, stackTrace) {
+      throw ErrorHandler.handleError(e, stackTrace);
+    }
+  }
+
+  /// Actualizar foto de perfil del usuario
+  Future<void> updateUserPhotoUrl(String? photoUrl) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) {
+        throw AuthException.userNotFound();
+      }
+
+      // Actualizar en Firestore
+      await _firestore.collection('users').doc(user.uid).update({
+        'photoUrl': photoUrl,
+      });
+
+      // Actualizar en Firebase Auth
+      await user.updatePhotoURL(photoUrl);
+      await user.reload();
+
+      // Forzar actualización del stream personalizado
+      final updatedUser = _firebaseAuth.currentUser;
+      if (updatedUser != null) {
+        final userModel = UserModel.fromFirebaseUser(updatedUser);
+        _userController.add(userModel);
       }
     } catch (e, stackTrace) {
       throw ErrorHandler.handleError(e, stackTrace);

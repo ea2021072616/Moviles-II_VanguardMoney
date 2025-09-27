@@ -12,6 +12,7 @@ import '../models/edit_profile_model.dart';
 import '../models/user_profile_model.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/edit_profile_viewmodel.dart';
+
 class EditProfilePage extends ConsumerStatefulWidget {
   const EditProfilePage({super.key});
 
@@ -46,9 +47,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       _usernameController.text = userProfile.username;
       _edadController.text = userProfile.edad?.toString() ?? '';
       _ocupacionController.text = userProfile.ocupacion ?? '';
-      _ingresoController.text = userProfile.ingresoMensualAprox?.toStringAsFixed(2) ?? '';
+      _ingresoController.text =
+          userProfile.ingresoMensualAprox?.toStringAsFixed(2) ?? '';
 
-            // Inicializar el provider con los datos actuales
+      // Inicializar el provider con los datos actuales
       WidgetsBinding.instance.addPostFrameCallback((_) {
         ref
             .read(editProfileProvider.notifier)
@@ -278,6 +280,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     UserProfileModel? userProfile,
   ) {
     final currentUser = ref.watch(currentUserProvider);
+    final editState = ref.watch(editProfileProvider);
+    final isLoading = editState.status == EditProfileStatus.loading;
 
     return Center(
       child: Stack(
@@ -285,7 +289,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           CircleAvatar(
             radius: AppSizes.fabCenterSize,
             backgroundColor: AppColors.blueClassic.withOpacity(0.1),
-            child: currentUser?.photoUrl != null
+            child: isLoading
+                ? CircularProgressIndicator(
+                    color: AppColors.blueClassic,
+                    strokeWidth: 3,
+                  )
+                : currentUser?.photoUrl != null
                 ? ClipOval(
                     child: Image.network(
                       currentUser!.photoUrl!,
@@ -307,29 +316,39 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                     color: AppColors.blueClassic,
                   ),
           ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.surface,
-                  width: 2,
+          if (!isLoading)
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.surface,
+                    width: 2,
+                  ),
                 ),
-              ),
-              child: IconButton(
-                onPressed: () => _showPhotoOptions(context),
-                icon: const Icon(
-                  Icons.camera_alt,
-                  color: Colors.white,
-                  size: 20,
+                child: IconButton(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          if (mounted) {
+                            _showPhotoOptions(context);
+                          }
+                        },
+                  icon: const Icon(
+                    Icons.camera_alt,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 36,
+                    minHeight: 36,
+                  ),
                 ),
-                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -371,10 +390,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       children: [
         Text(
           'Edad',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -420,10 +438,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       children: [
         Text(
           'Ocupación',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -437,7 +454,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           ),
           inputFormatters: [
             LengthLimitingTextInputFormatter(50),
-            FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s]')),
+            FilteringTextInputFormatter.allow(
+              RegExp(r'[a-zA-ZñÑáéíóúÁÉÍÓÚüÜ\s]'),
+            ),
           ],
           validator: (value) {
             // CAMPO OPCIONAL - no requerido
@@ -453,7 +472,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             return null;
           },
           onChanged: (value) {
-            ref.read(editProfileProvider.notifier).updateOcupacion(value.trim());
+            ref
+                .read(editProfileProvider.notifier)
+                .updateOcupacion(value.trim());
           },
           textInputAction: TextInputAction.next,
           textCapitalization: TextCapitalization.words,
@@ -465,16 +486,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   Widget _buildIngresoMensualField(BuildContext context) {
     final userProfileAsync = ref.watch(currentUserProfileProvider);
     final userCurrency = userProfileAsync.value?.currency ?? 'S/';
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Ingreso Mensual Aproximado',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         TextFormField(
@@ -490,7 +510,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: [
             FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-            LengthLimitingTextInputFormatter(12), // Para números grandes pero razonables
+            LengthLimitingTextInputFormatter(
+              12,
+            ), // Para números grandes pero razonables
           ],
           validator: (value) {
             // CAMPO OPCIONAL - no requerido
@@ -510,7 +532,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             return null;
           },
           onChanged: (value) {
-            ref.read(editProfileProvider.notifier).updateIngresoMensualAproxFromString(value);
+            ref
+                .read(editProfileProvider.notifier)
+                .updateIngresoMensualAproxFromString(value);
           },
           textInputAction: TextInputAction.done,
         ),
@@ -693,12 +717,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   void _handleCancel(BuildContext context) async {
     final userProfileAsync = ref.read(currentUserProfileProvider);
-    
+
     if (userProfileAsync.hasValue) {
       final hasChanges = ref
           .read(editProfileProvider.notifier)
           .hasChanges(userProfileAsync.value);
-          
+
       if (hasChanges) {
         final shouldDiscard = await _showDiscardChangesDialog(context);
         if (shouldDiscard && mounted) {
@@ -715,44 +739,45 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   Future<bool> _showDiscardChangesDialog(BuildContext context) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.warning_outlined, color: Colors.orange),
-            const SizedBox(width: 8),
-            const Text('Cambios sin guardar'),
-          ],
-        ),
-        content: const Text(
-          '¿Estás seguro de que deseas descartar los cambios realizados?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Continuar editando'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: const Text('Descartar cambios'),
+            title: Row(
+              children: [
+                Icon(Icons.warning_outlined, color: Colors.orange),
+                const SizedBox(width: 8),
+                const Text('Cambios sin guardar'),
+              ],
+            ),
+            content: const Text(
+              '¿Estás seguro de que deseas descartar los cambios realizados?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Continuar editando'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Descartar cambios'),
+              ),
+            ],
           ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   Future<void> _handleSave() async {
     // Limpiar errores previos
     ref.read(editProfileProvider.notifier).clearErrors();
-    
+
     if (_formKey.currentState?.validate() ?? false) {
       // Mostrar indicador de carga
       final scaffoldMessenger = ScaffoldMessenger.of(context);
-      
+
       try {
         final success = await ref
             .read(editProfileProvider.notifier)
@@ -790,9 +815,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 children: [
                   Icon(Icons.error_outline, color: AppColors.white),
                   const SizedBox(width: 8),
-                  Flexible(
-                    child: Text('Error al guardar: ${e.toString()}'),
-                  ),
+                  Flexible(child: Text('Error al guardar: ${e.toString()}')),
                 ],
               ),
               backgroundColor: AppColors.redCoral,
@@ -819,7 +842,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
             children: [
               Icon(Icons.warning_outlined, color: Colors.white),
               SizedBox(width: 8),
-              Flexible(child: Text('Por favor corrige los errores en el formulario')),
+              Flexible(
+                child: Text('Por favor corrige los errores en el formulario'),
+              ),
             ],
           ),
           backgroundColor: Colors.orange,
@@ -831,6 +856,8 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   }
 
   void _showPhotoOptions(BuildContext context) {
+    if (!mounted) return;
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -862,7 +889,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                     title: const Text('Tomar foto'),
                     onTap: () {
                       Navigator.pop(context);
-                      _showComingSoon(context, 'Tomar foto');
+                      _takePicture();
                     },
                   ),
                   ListTile(
@@ -870,7 +897,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                     title: const Text('Elegir de galería'),
                     onTap: () {
                       Navigator.pop(context);
-                      _showComingSoon(context, 'Elegir de galería');
+                      _pickFromGallery();
                     },
                   ),
                   ListTile(
@@ -878,9 +905,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                     title: const Text('Eliminar foto'),
                     onTap: () {
                       Navigator.pop(context);
-                      ref
-                          .read(editProfileProvider.notifier)
-                          .updatePhotoUrl(null);
+                      _deletePhoto();
                     },
                   ),
                 ],
@@ -892,31 +917,91 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     );
   }
 
-  void _showComingSoon(BuildContext context, String feature) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(
-              Icons.construction,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            const Text('Próximamente'),
-          ],
-        ),
-        content: Text(
-          'La función "$feature" estará disponible en una próxima actualización.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Entendido'),
+  void _takePicture() async {
+    try {
+      await ref.read(editProfileProvider.notifier).pickImageFromCamera();
+      if (mounted) {
+        _handleImageResult();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error inesperado: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
-        ],
-      ),
-    );
+        );
+      }
+    }
+  }
+
+  void _pickFromGallery() async {
+    try {
+      await ref.read(editProfileProvider.notifier).pickImageFromGallery();
+      if (mounted) {
+        _handleImageResult();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error inesperado: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _deletePhoto() async {
+    try {
+      await ref.read(editProfileProvider.notifier).deleteProfilePhoto();
+      if (mounted) {
+        _handleImageResult();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error inesperado: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _handleImageResult() {
+    if (!mounted) return;
+
+    final editState = ref.read(editProfileProvider);
+
+    if (editState.status == EditProfileStatus.error &&
+        editState.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(editState.errorMessage!),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    } else if (editState.status == EditProfileStatus.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Foto actualizada correctamente'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
   }
 }

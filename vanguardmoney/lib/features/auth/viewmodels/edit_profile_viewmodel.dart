@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/edit_profile_model.dart';
 import '../models/user_profile_model.dart';
 import '../services/auth_repository.dart';
+import '../services/image_service.dart';
 import '../../../core/exceptions/app_exception.dart';
 import '../providers/auth_providers.dart';
 import 'auth_viewmodel.dart';
@@ -138,6 +139,145 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
   void updatePhotoUrl(String? photoUrl) {
     final updatedProfile = state.profile.copyWith(photoUrl: photoUrl);
     state = state.copyWithProfile(updatedProfile);
+  }
+
+  /// Seleccionar imagen desde la cámara
+  Future<void> pickImageFromCamera() async {
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) {
+      state = state.copyWithError('Usuario no autenticado');
+      return;
+    }
+
+    state = state.copyWithLoading();
+
+    try {
+      // Verificar permisos
+      final hasPermissions = await ImageService.checkAndRequestPermissions();
+      if (!hasPermissions) {
+        state = state.copyWithError('Permisos de cámara requeridos');
+        return;
+      }
+
+      // Seleccionar imagen
+      final imageFile = await ImageService.pickImageFromCamera();
+      if (imageFile == null) {
+        // Usuario canceló la selección
+        state = state.copyWithProfile(state.profile);
+        return;
+      }
+
+      // Subir imagen
+      final imageUrl = await ImageService.uploadProfileImage(
+        imageFile,
+        currentUser.id,
+      );
+      if (imageUrl == null) {
+        state = state.copyWithError('Error al subir la imagen');
+        return;
+      }
+
+      // Actualizar el perfil con la nueva URL
+      updatePhotoUrl(imageUrl);
+
+      // Guardar en Firebase
+      await _savePhotoUrlToFirestore(imageUrl);
+
+      state = state.copyWithSuccess();
+    } catch (e) {
+      state = state.copyWithError(
+        'Error al procesar la imagen: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Seleccionar imagen desde la galería
+  Future<void> pickImageFromGallery() async {
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) {
+      state = state.copyWithError('Usuario no autenticado');
+      return;
+    }
+
+    state = state.copyWithLoading();
+
+    try {
+      // Verificar permisos
+      final hasPermissions = await ImageService.checkAndRequestPermissions();
+      if (!hasPermissions) {
+        state = state.copyWithError('Permisos de galería requeridos');
+        return;
+      }
+
+      // Seleccionar imagen
+      final imageFile = await ImageService.pickImageFromGallery();
+      if (imageFile == null) {
+        // Usuario canceló la selección
+        state = state.copyWithProfile(state.profile);
+        return;
+      }
+
+      // Subir imagen
+      final imageUrl = await ImageService.uploadProfileImage(
+        imageFile,
+        currentUser.id,
+      );
+      if (imageUrl == null) {
+        state = state.copyWithError('Error al subir la imagen');
+        return;
+      }
+
+      // Actualizar el perfil con la nueva URL
+      updatePhotoUrl(imageUrl);
+
+      // Guardar en Firebase
+      await _savePhotoUrlToFirestore(imageUrl);
+
+      state = state.copyWithSuccess();
+    } catch (e) {
+      state = state.copyWithError(
+        'Error al procesar la imagen: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Eliminar la foto de perfil
+  Future<void> deleteProfilePhoto() async {
+    final currentUser = _ref.read(currentUserProvider);
+    if (currentUser == null) {
+      state = state.copyWithError('Usuario no autenticado');
+      return;
+    }
+
+    state = state.copyWithLoading();
+
+    try {
+      // Eliminar de Firebase Storage si existe
+      await ImageService.deleteProfileImage(currentUser.id);
+
+      // Actualizar el perfil sin foto
+      updatePhotoUrl(null);
+
+      // Guardar en Firebase
+      await _savePhotoUrlToFirestore(null);
+
+      state = state.copyWithSuccess();
+    } catch (e) {
+      state = state.copyWithError(
+        'Error al eliminar la imagen: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Guardar solo la URL de la foto
+  Future<void> _savePhotoUrlToFirestore(String? photoUrl) async {
+    try {
+      await _authRepository.updateUserPhotoUrl(photoUrl);
+      _ref.invalidate(currentUserProfileProvider);
+    } catch (e) {
+      print('Error al guardar URL de foto: $e');
+      rethrow;
+    }
   }
 
   /// Validar el perfil sin guardarlo

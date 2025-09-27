@@ -127,6 +127,21 @@ class AuthViewModel extends AsyncNotifier<AuthState> {
     }
   }
 
+  /// Refrescar información del usuario actual
+  Future<void> refreshUser() async {
+    try {
+      final currentUser = _authRepository.currentUser;
+      if (currentUser != null) {
+        state = AsyncValue.data(AuthAuthenticated(currentUser));
+      } else {
+        state = const AsyncValue.data(AuthUnauthenticated());
+      }
+    } catch (e) {
+      // No cambiar el estado si hay error, mantener el estado actual
+      print('Error al refrescar usuario: $e');
+    }
+  }
+
   /// Limpiar errores
   void clearError() {
     state.whenData((data) {
