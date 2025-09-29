@@ -1,5 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/financial_plan_model.dart';
+import '../services/financial_plans_service.dart';
+import '../../transactions/models/categoria_model.dart';
+import '../../transactions/services/categoria_service.dart';
+import '../../auth/providers/auth_providers.dart';
 
 /// Estados para el ViewModel de planes financieros
 sealed class FinancialPlansState {
@@ -15,8 +19,9 @@ class FinancialPlansLoading extends FinancialPlansState {
 }
 
 class FinancialPlansLoaded extends FinancialPlansState {
-  final List<FinancialPlan> plans;
-  const FinancialPlansLoaded(this.plans);
+  final List<FinancialPlanModel> plans;
+  final FinancialPlanModel? currentPlan;
+  const FinancialPlansLoaded(this.plans, {this.currentPlan});
 }
 
 class FinancialPlansError extends FinancialPlansState {
@@ -24,122 +29,277 @@ class FinancialPlansError extends FinancialPlansState {
   const FinancialPlansError(this.message);
 }
 
-/// ViewModel para manejar los planes financieros
-class FinancialPlansViewModel extends StateNotifier<FinancialPlansState> {
-  FinancialPlansViewModel() : super(const FinancialPlansInitial());
+/// Provider para el servicio de planes financieros
+final financialPlansServiceProvider = Provider<FinancialPlansService>((ref) {
+  return FinancialPlansService();
+});
+
+/// Provider para el servicio de categorías
+final categoriaServiceProvider = Provider<CategoriaService>((ref) {
+  return CategoriaService();
+});
+
+/// ViewModel principal para planes financieros
+class FinancialPlansViewModel extends AsyncNotifier<FinancialPlansState> {
+  late FinancialPlansService _financialPlansService;
+  late CategoriaService _categoriaService;
+
+  @override
+  Future<FinancialPlansState> build() async {
+    _financialPlansService = ref.read(financialPlansServiceProvider);
+    _categoriaService = ref.read(categoriaServiceProvider);
+
+    return const FinancialPlansInitial();
+  }
 
   /// Cargar planes financieros del usuario
-  Future<void> loadFinancialPlans(String userId) async {
-    state = const FinancialPlansLoading();
+  Future<void> loadFinancialPlans() async {
+    state = const AsyncValue.loading();
 
     try {
-      // TODO: Implementar servicio para cargar planes desde Firestore
-      await Future.delayed(const Duration(seconds: 1)); // Simulación
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        state = const AsyncValue.data(
+          FinancialPlansError('Usuario no autenticado'),
+        );
+        return;
+      }
 
-      // Datos de ejemplo
-      final plans = [
-        FinancialPlan(
-          id: '1',
-          userId: userId,
-          name: 'Fondo de Emergencia',
-          description: 'Ahorrar 6 meses de gastos',
-          targetAmount: 10000.0,
-          currentAmount: 6500.0,
-          targetDate: DateTime.now().add(const Duration(days: 180)),
-          createdAt: DateTime.now().subtract(const Duration(days: 30)),
-          updatedAt: DateTime.now(),
-          status: FinancialPlanStatus.active,
-          category: FinancialPlanCategory.emergency,
-        ),
-        FinancialPlan(
-          id: '2',
-          userId: userId,
-          name: 'Vacaciones Europa',
-          description: 'Viaje de 2 semanas por Europa',
-          targetAmount: 5000.0,
-          currentAmount: 2300.0,
-          targetDate: DateTime.now().add(const Duration(days: 120)),
-          createdAt: DateTime.now().subtract(const Duration(days: 60)),
-          updatedAt: DateTime.now(),
-          status: FinancialPlanStatus.active,
-          category: FinancialPlanCategory.travel,
-        ),
-      ];
+      final plans = await _financialPlansService.getUserFinancialPlans(user.id);
 
-      state = FinancialPlansLoaded(plans);
+      // Obtener el plan del mes actual si existe
+      final now = DateTime.now();
+      final currentPlan = await _financialPlansService.getPlanByMonth(
+        userId: user.id,
+        year: now.year,
+        month: now.month,
+      );
+
+      state = AsyncValue.data(
+        FinancialPlansLoaded(plans, currentPlan: currentPlan),
+      );
     } catch (e) {
-      state = FinancialPlansError('Error al cargar planes: $e');
+      state = AsyncValue.data(
+        FinancialPlansError('Error al cargar planes: $e'),
+      );
+    }
+  }
+
+  /// Obtener plan específico por mes/año
+  Future<FinancialPlanModel?> getPlanByMonth({
+    required int year,
+    required int month,
+  }) async {
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) return null;
+
+      return await _financialPlansService.getPlanByMonth(
+        userId: user.id,
+        year: year,
+        month: month,
+      );
+    } catch (e) {
+      print('Error al obtener plan del mes: $e');
+      return null;
     }
   }
 
   /// Crear un nuevo plan financiero
-  Future<void> createPlan(FinancialPlan plan) async {
-    // TODO: Implementar creación en Firestore
-    await Future.delayed(const Duration(milliseconds: 500));
+  Future<bool> createFinancialPlan({
+    required String planName,
+    required int year,
+    required int month,
+    required double totalBudget,
+    required PlanType planType,
+    List<CategoryBudget>? customBudgets,
+  }) async {
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
 
-    if (state is FinancialPlansLoaded) {
-      final currentPlans = (state as FinancialPlansLoaded).plans;
-      final updatedPlans = [...currentPlans, plan];
-      state = FinancialPlansLoaded(updatedPlans);
-    }
-  }
+      FinancialPlanModel newPlan;
 
-  /// Actualizar un plan existente
-  Future<void> updatePlan(FinancialPlan updatedPlan) async {
-    // TODO: Implementar actualización en Firestore
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (state is FinancialPlansLoaded) {
-      final currentPlans = (state as FinancialPlansLoaded).plans;
-      final updatedPlans = currentPlans
-          .map((plan) => plan.id == updatedPlan.id ? updatedPlan : plan)
-          .toList();
-      state = FinancialPlansLoaded(updatedPlans);
-    }
-  }
-
-  /// Eliminar un plan
-  Future<void> deletePlan(String planId) async {
-    // TODO: Implementar eliminación en Firestore
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    if (state is FinancialPlansLoaded) {
-      final currentPlans = (state as FinancialPlansLoaded).plans;
-      final updatedPlans = currentPlans
-          .where((plan) => plan.id != planId)
-          .toList();
-      state = FinancialPlansLoaded(updatedPlans);
-    }
-  }
-
-  /// Añadir dinero a un plan
-  Future<void> addMoneyToPlan(String planId, double amount) async {
-    if (state is FinancialPlansLoaded) {
-      final currentPlans = (state as FinancialPlansLoaded).plans;
-      final updatedPlans = currentPlans.map((plan) {
-        if (plan.id == planId) {
-          final newAmount = plan.currentAmount + amount;
-          final status = newAmount >= plan.targetAmount
-              ? FinancialPlanStatus.completed
-              : plan.status;
-          return plan.copyWith(
-            currentAmount: newAmount,
-            status: status,
-            updatedAt: DateTime.now(),
+      switch (planType) {
+        case PlanType.standard:
+          final categories = await _categoriaService.obtenerCategorias(
+            user.id,
+            TipoCategoria.egreso,
           );
-        }
-        return plan;
-      }).toList();
+          newPlan = FinancialPlanModel.createStandardPlan(
+            userId: user.id,
+            planName: planName,
+            year: year,
+            month: month,
+            totalBudget: totalBudget,
+            categories: categories,
+          );
+          break;
 
-      state = FinancialPlansLoaded(updatedPlans);
+        case PlanType.custom:
+          if (customBudgets == null || customBudgets.isEmpty) {
+            throw Exception('Se requieren asignaciones personalizadas');
+          }
+          final now = DateTime.now();
+          newPlan = FinancialPlanModel(
+            id: '',
+            userId: user.id,
+            planName: planName,
+            year: year,
+            month: month,
+            totalBudget: totalBudget,
+            categoryBudgets: customBudgets,
+            planType: planType,
+            createdAt: now,
+            updatedAt: now,
+          );
+          break;
 
-      // TODO: Guardar en Firestore
+        case PlanType.ai:
+          // Para el futuro: implementación de IA
+          throw Exception('Función de IA aún no implementada');
+      }
+
+      await _financialPlansService.createFinancialPlan(newPlan);
+      await loadFinancialPlans(); // Recargar planes
+      return true;
+    } catch (e) {
+      state = AsyncValue.data(FinancialPlansError('Error al crear plan: $e'));
+      return false;
+    }
+  }
+
+  /// Actualizar plan existente
+  Future<bool> updateFinancialPlan(FinancialPlanModel plan) async {
+    try {
+      final success = await _financialPlansService.updateFinancialPlan(plan);
+      if (success) {
+        await loadFinancialPlans(); // Recargar planes
+      }
+      return success;
+    } catch (e) {
+      state = AsyncValue.data(
+        FinancialPlansError('Error al actualizar plan: $e'),
+      );
+      return false;
+    }
+  }
+
+  /// Actualizar gasto en una categoría
+  Future<bool> updateCategorySpent({
+    required String planId,
+    required String categoryId,
+    required double newSpentAmount,
+  }) async {
+    try {
+      final success = await _financialPlansService.updateCategorySpent(
+        planId: planId,
+        categoryId: categoryId,
+        newSpentAmount: newSpentAmount,
+      );
+
+      if (success) {
+        await loadFinancialPlans(); // Recargar planes
+      }
+      return success;
+    } catch (e) {
+      print('Error al actualizar gasto de categoría: $e');
+      return false;
+    }
+  }
+
+  /// Eliminar plan
+  Future<bool> deleteFinancialPlan(String planId) async {
+    try {
+      final success = await _financialPlansService.deleteFinancialPlan(planId);
+      if (success) {
+        await loadFinancialPlans(); // Recargar planes
+      }
+      return success;
+    } catch (e) {
+      state = AsyncValue.data(
+        FinancialPlansError('Error al eliminar plan: $e'),
+      );
+      return false;
+    }
+  }
+
+  /// Duplicar plan del mes anterior
+  Future<bool> duplicatePreviousMonth({
+    required int targetYear,
+    required int targetMonth,
+  }) async {
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      await _financialPlansService.duplicatePreviousMonth(
+        userId: user.id,
+        targetYear: targetYear,
+        targetMonth: targetMonth,
+      );
+
+      await loadFinancialPlans(); // Recargar planes
+      return true;
+    } catch (e) {
+      state = AsyncValue.data(
+        FinancialPlansError('Error al duplicar plan: $e'),
+      );
+      return false;
+    }
+  }
+
+  /// Obtener categorías disponibles para crear planes
+  Future<List<CategoriaModel>> getAvailableCategories() async {
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) return [];
+
+      return await _categoriaService.obtenerCategorias(
+        user.id,
+        TipoCategoria.egreso,
+      );
+    } catch (e) {
+      print('Error al obtener categorías: $e');
+      return [];
+    }
+  }
+
+  /// Obtener estadísticas de un plan
+  Future<Map<String, dynamic>> getPlanStatistics(String planId) async {
+    try {
+      return await _financialPlansService.getPlanStatistics(planId);
+    } catch (e) {
+      print('Error al obtener estadísticas: $e');
+      return {};
     }
   }
 }
 
-/// Provider para el ViewModel de planes financieros
+/// Provider del ViewModel
 final financialPlansViewModelProvider =
-    StateNotifierProvider<FinancialPlansViewModel, FinancialPlansState>(
-      (ref) => FinancialPlansViewModel(),
+    AsyncNotifierProvider<FinancialPlansViewModel, FinancialPlansState>(
+      () => FinancialPlansViewModel(),
     );
+
+/// Provider para obtener el plan del mes actual
+final currentMonthPlanProvider = FutureProvider<FinancialPlanModel?>((
+  ref,
+) async {
+  final viewModel = ref.read(financialPlansViewModelProvider.notifier);
+  final now = DateTime.now();
+
+  return await viewModel.getPlanByMonth(year: now.year, month: now.month);
+});
+
+/// Provider para obtener categorías disponibles
+final availableCategoriesProvider = FutureProvider<List<CategoriaModel>>((
+  ref,
+) async {
+  final viewModel = ref.read(financialPlansViewModelProvider.notifier);
+  return await viewModel.getAvailableCategories();
+});
