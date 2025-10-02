@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/Ver_transacciones_viewmodel.dart';
+import '../viewmodels/ver_detalle_viewmodel.dart';
 import '../services/filtros.dart';
 import '../../../core/theme/app_colors.dart';
+import 'ver_detalle_view.dart';
 
 class VerTransaccionesView extends StatefulWidget {
   const VerTransaccionesView({Key? key}) : super(key: key);
@@ -15,11 +17,23 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
   late ServicioBusquedaTransacciones _servicioBusqueda;
   CriteriosBusqueda _criteriosBusqueda = const CriteriosBusqueda();
   bool _mostrarFiltros = false;
+  late VerTransaccionesViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
     _servicioBusqueda = ServicioBusquedaTransacciones();
+    _viewModel = VerTransaccionesViewModel();
+    // Cargar datos cuando se inicializa
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _viewModel.cargarTransacciones();
+    });
+  }
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
   }
 
   // Método para formatear números como moneda
@@ -42,17 +56,49 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
+  // Método para navegar al detalle de una transacción
+  Future<void> _navegarADetalle(TransaccionItem transaccion) async {
+    final resultado = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChangeNotifierProvider(
+          create: (_) => VerDetalleViewModel(),
+          child: VerDetalleView(
+            transaccionId: transaccion.id,
+            tipo: transaccion.tipo,
+          ),
+        ),
+      ),
+    );
+
+    // Si se modificó la transacción (editó o eliminó), recargar la lista
+    if (resultado == true && mounted) {
+      // Recargar la lista de transacciones
+      await _viewModel.refrescar();
+
+      // Mostrar confirmación de que se actualizó
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.refresh, color: Colors.white, size: 20),
+                SizedBox(width: 12),
+                Text('Lista actualizada'),
+              ],
+            ),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<VerTransaccionesViewModel>(
-      create: (context) {
-        final viewModel = VerTransaccionesViewModel();
-        // Cargar datos después de crear el ViewModel
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          viewModel.cargarTransacciones();
-        });
-        return viewModel;
-      },
+    return ChangeNotifierProvider<VerTransaccionesViewModel>.value(
+      value: _viewModel,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -256,90 +302,98 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
       margin: const EdgeInsets.only(bottom: 12.0),
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: colorPrincipal.withOpacity(0.3), width: 1),
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.all(16.0),
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: colorPrincipal.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: () => _navegarADetalle(transaccion),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: colorPrincipal.withOpacity(0.3),
+              width: 1,
             ),
-            child: Icon(icono, color: colorPrincipal, size: 24),
           ),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  transaccion.categoria,
-                  style: const TextStyle(
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(16.0),
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorPrincipal.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icono, color: colorPrincipal, size: 24),
+            ),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    transaccion.categoria,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text(
+                  '${esIngreso ? '+' : '-'}\$${_formatCurrency(transaccion.monto)}',
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
+                    color: colorPrincipal,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-              Text(
-                '${esIngreso ? '+' : '-'}\$${_formatCurrency(transaccion.monto)}',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: colorPrincipal,
-                ),
-              ),
-            ],
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              if (transaccion.descripcion.isNotEmpty)
-                Text(
-                  transaccion.descripcion,
-                  style: TextStyle(color: AppColors.greyDark, fontSize: 14),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today,
-                    size: 14,
-                    color: AppColors.greyDark,
-                  ),
-                  const SizedBox(width: 4),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                if (transaccion.descripcion.isNotEmpty)
                   Text(
-                    _formatDate(transaccion.fecha),
-                    style: TextStyle(color: AppColors.greyDark, fontSize: 12),
+                    transaccion.descripcion,
+                    style: TextStyle(color: AppColors.greyDark, fontSize: 14),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: AppColors.greyDark,
                     ),
-                    decoration: BoxDecoration(
-                      color: colorPrincipal.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatDate(transaccion.fecha),
+                      style: TextStyle(color: AppColors.greyDark, fontSize: 12),
                     ),
-                    child: Text(
-                      esIngreso ? 'Ingreso' : 'Gasto',
-                      style: TextStyle(
-                        color: colorPrincipal,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorPrincipal.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        esIngreso ? 'Ingreso' : 'Gasto',
+                        style: TextStyle(
+                          color: colorPrincipal,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
+            trailing: Icon(Icons.chevron_right, color: AppColors.greyMedium),
           ),
         ),
       ),
