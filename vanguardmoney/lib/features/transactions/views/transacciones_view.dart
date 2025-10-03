@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'ingreso/register_ingreso_view.dart';
 import 'egreso/register_bill_view.dart';
+import 'registrar_con_ia_screen.dart';
+import '../viewmodels/registrar_IA_viewmodel.dart';
 
 class TransaccionesView extends StatelessWidget {
   final String idUsuario;
@@ -90,23 +93,20 @@ class TransaccionesView extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // Escanear con IA
+                    // Registrar con IA
                     _buildTransactionCard(
                       context: context,
-                      title: 'Escanear con IA',
-                      subtitle: 'Procesar recibo automáticamente',
-                      icon: Icons.document_scanner,
+                      title: 'Registrar con IA',
+                      subtitle: 'Describe tu transacción con lenguaje natural',
+                      icon: Icons.auto_awesome,
                       color: Colors.indigo,
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text(
-                              'Función de escaneo con IA próximamente',
-                            ),
-                            backgroundColor: Colors.indigo,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ChangeNotifierProvider(
+                              create: (_) => RegistrarMedianteIAViewModel(),
+                              child: RegistrarConIAScreen(idUsuario: idUsuario),
                             ),
                           ),
                         );
