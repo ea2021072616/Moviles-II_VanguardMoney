@@ -68,7 +68,7 @@ class ProfileDrawer extends ConsumerWidget {
                   Icons.notifications_outlined,
                   Icons.notifications,
                   'Notificaciones',
-                  () => _showNotificationsDialog(context, ref),
+                  () => context.push(AppRoutes.notifications),
                   color: AppColors.yellowPastel,
                 ),
                 _buildMenuItem(
@@ -561,14 +561,6 @@ class ProfileDrawer extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-
-  // Dialogo de configuración de notificaciones push del dispositivo
-  void _showNotificationsDialog(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (context) => _NotificationsDialogWidget(),
     );
   }
 

@@ -270,4 +270,26 @@ class FinancialPlansService {
       return {};
     }
   }
+
+  /// Obtener un plan financiero por ID
+  Future<FinancialPlanModel?> getPlanById(String planId) async {
+    try {
+      final doc = await _firestore
+          .collection(_collection)
+          .doc(planId)
+          .get();
+
+      if (!doc.exists) {
+        return null;
+      }
+
+      return FinancialPlanModel.fromMap({
+        ...doc.data()!,
+        'id': doc.id,
+      });
+    } catch (e) {
+      print('Error al obtener plan por ID: $e');
+      return null;
+    }
+  }
 }
