@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-// ...existing code...
 import '../viewmodels/registrar_IA_viewmodel.dart';
+import 'datos_IA_revividos_view.dart';
 
-/// Pantalla para registrar transacciones usando Firebase AI (Gemini)
+/// Pantalla para registrar transacciones escaneando imágenes con OCR
 class RegistrarConIAScreen extends StatefulWidget {
   final String? idUsuario;
   
@@ -16,33 +16,24 @@ class RegistrarConIAScreen extends StatefulWidget {
 }
 
 class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
-  Map<String, dynamic>? _extractedData;
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
     super.initState();
-    // Inicializar el modelo al cargar la pantalla
+    // Inicializar Gemini al cargar la pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final viewModel = Provider.of<RegistrarMedianteIAViewModel>(context, listen: false);
       viewModel.initializeGeminiModel();
     });
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  // text input flow removed — only image-based analysis is used
-
   Future<void> _pickImage(ImageSource source) async {
     final picked = await _picker.pickImage(source: source, imageQuality: 80);
     if (picked == null) return;
     setState(() {
       _selectedImage = File(picked.path);
-      _extractedData = null;
     });
   }
 
@@ -52,17 +43,19 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
       return;
     }
 
-    final viewModel = Provider.of<RegistrarMedianteIAViewModel>(context, listen: false);
-    final result = await viewModel.analyzeImage(_selectedImage!.path);
-
-    if (result != null) {
-      setState(() {
-        _extractedData = result;
-      });
-    } else if (viewModel.errorMessage != null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(viewModel.errorMessage!)));
-      }
+    final idUsuario = widget.idUsuario ?? 'usuario_default';
+    
+    // Navegar a la vista de datos extraídos
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DatosIARevividosView(
+            imagePath: _selectedImage!.path,
+            idUsuario: idUsuario,
+          ),
+        ),
+      );
     }
   }
 
@@ -102,7 +95,7 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        '¿Qué transacción realizaste?',
+                        'Escanear Factura',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -110,14 +103,11 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      // Secondary helper message removed per request
                     ],
                   ),
                 ),
 
                 const SizedBox(height: 24),
-
-                // (Text input flow removed) - usa imagen para analizar
 
                 // Área de selección de imagen
                 Row(
@@ -198,140 +188,8 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
 
                 const SizedBox(height: 24),
 
-                // Resultados
-                if (_extractedData != null) ...[
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(color: Colors.grey[200]!),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.green[600], size: 24),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Datos Extraídos',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Divider(height: 24),
-                          _buildDataRow(
-                            'Tipo',
-                            _extractedData!['tipo'] ?? 'N/A',
-                            _extractedData!['tipo'] == 'ingreso' ? Icons.trending_up : Icons.trending_down,
-                            _extractedData!['tipo'] == 'ingreso' ? Colors.green : Colors.deepOrange,
-                          ),
-                          _buildDataRow(
-                            'Monto',
-                            '\$${_extractedData!['monto'] ?? 'N/A'}',
-                            Icons.attach_money,
-                            Colors.indigo,
-                          ),
-                          _buildDataRow(
-                            'Categoría',
-                            _extractedData!['categoria'] ?? 'N/A',
-                            Icons.category,
-                            Colors.purple,
-                          ),
-                          _buildDataRow(
-                            'Descripción',
-                            _extractedData!['descripcion'] ?? 'N/A',
-                            Icons.description,
-                            Colors.blue,
-                          ),
-                          _buildDataRow(
-                            'Fecha',
-                            _extractedData!['fecha'] ?? 'N/A',
-                            Icons.calendar_today,
-                            Colors.orange,
-                          ),
-                          
-                          const SizedBox(height: 20),
-                          
-                          // Botones de acción
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton.icon(
-                                  onPressed: () {
-                                    setState(() {
-                                      _extractedData = null;
-                                      _selectedImage = null;
-                                    });
-                                  },
-                                  icon: const Icon(Icons.refresh),
-                                  label: const Text('Nueva'),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    side: BorderSide(color: Colors.grey[400]!),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 2,
-                                child: ElevatedButton.icon(
-                                  onPressed: () async {
-                                    final viewModel = Provider.of<RegistrarMedianteIAViewModel>(context, listen: false);
-                                    // Mostrar indicador mientras guarda
-                                    final success = await viewModel.saveParsedTransaction(_extractedData!, widget.idUsuario);
-                                    if (mounted) {
-                                      if (success) {
-                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Transacción guardada correctamente')));
-                                        Navigator.pop(context, true);
-                                      } else {
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(viewModel.errorMessage ?? 'Error al guardar')));
-                                      }
-                                    }
-                                  },
-                                  icon: viewModel.isLoading
-                                      ? const SizedBox(
-                                          width: 18,
-                                          height: 18,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                          ),
-                                        )
-                                      : const Icon(Icons.save),
-                                  label: Text(
-                                    viewModel.isLoading ? 'Guardando...' : 'Guardar',
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-
                 // Tip informativo
-                if (_extractedData == null)
-                  Container(
+                Container(
                     margin: const EdgeInsets.only(top: 16),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -359,51 +217,4 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
       ),
     );
   }
-
-  Widget _buildDataRow(String label, String value, IconData icon, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 18),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // La función de guardado local fue reemplazada por el método del ViewModel
 }
