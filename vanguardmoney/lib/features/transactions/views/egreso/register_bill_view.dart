@@ -19,7 +19,13 @@ final categoriaViewModelProvider = ChangeNotifierProvider<CategoriaViewModel>(
 
 class RegisterBillView extends ConsumerStatefulWidget {
   final String idUsuario;
-  const RegisterBillView({Key? key, required this.idUsuario}) : super(key: key);
+  final Map<String, dynamic>? datosIniciales;
+  
+  const RegisterBillView({
+    Key? key,
+    required this.idUsuario,
+    this.datosIniciales,
+  }) : super(key: key);
 
   @override
   ConsumerState<RegisterBillView> createState() => _RegisterBillViewState();
@@ -29,11 +35,28 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
   @override
   void initState() {
     super.initState();
-    // Cargar categorías al iniciar
+    // Cargar categorías y prellenar datos si vienen de la IA
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(categoriaViewModelProvider)
           .cargarCategorias(widget.idUsuario, TipoCategoria.egreso);
+      
+      // Si hay datos iniciales de la IA, prellenar los campos
+      if (widget.datosIniciales != null) {
+        final viewModel = ref.read(registerBillViewModelProvider);
+        final datos = widget.datosIniciales!;
+        
+        viewModel.proveedorController.text = datos['proveedor']?.toString() ?? '';
+        viewModel.montoController.text = datos['monto']?.toString() ?? '';
+        viewModel.descripcionController.text = datos['descripcion']?.toString() ?? '';
+        viewModel.lugarLocalController.text = datos['lugarLocal']?.toString() ?? '';
+        
+        // Seleccionar la categoría si existe
+        final categoria = datos['categoria']?.toString();
+        if (categoria != null && categoria.isNotEmpty) {
+          viewModel.setCategoria(categoria);
+        }
+      }
     });
   }
 
@@ -45,7 +68,30 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registrar Egreso'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Registrar Egreso'),
+            if (widget.datosIniciales != null) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome, size: 16),
+                    SizedBox(width: 4),
+                    Text('IA', style: TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         backgroundColor: Colors.deepOrange,
         centerTitle: true,
         elevation: 4,
@@ -72,7 +118,30 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                       color: Colors.deepOrange,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
+                  // Banner informativo si los datos vienen de la IA
+                  if (widget.datosIniciales != null)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.blue.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Datos extraídos con IA. Revisa y confirma antes de guardar.',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 16),
                   TextFormField(
                     controller: viewModel.proveedorController,
                     decoration: InputDecoration(

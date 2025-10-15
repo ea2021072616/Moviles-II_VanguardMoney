@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../viewmodels/registrar_IA_viewmodel.dart';
 import '../models/categoria_model.dart';
+import 'egreso/register_bill_view.dart';
 
 class DatosIARevividosView extends StatelessWidget {
   final String imagePath;
@@ -38,6 +39,8 @@ class DatosIARevividosView extends StatelessWidget {
                 _datoTile('Descripción', datos['descripcion']),
                 _datoTile('Lugar/Local', datos['lugarLocal']),
                 _buildCategoriaSelector(context, vm, datos),
+                const SizedBox(height: 24),
+                _buildAccionesButtons(context, datos),
               ],
             );
           },
@@ -143,6 +146,60 @@ class DatosIARevividosView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAccionesButtons(BuildContext context, Map<String, dynamic> datos) {
+    return Column(
+      children: [
+        // Botón para continuar con el registro
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RegisterBillView(
+                    idUsuario: datos['idUsuario'] ?? '',
+                    datosIniciales: datos,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.arrow_forward),
+            label: const Text('Continuar al Registro'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepOrange,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Botón para volver a escanear
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: const Icon(Icons.camera_alt),
+            label: const Text('Escanear otra factura'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              textStyle: const TextStyle(fontSize: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

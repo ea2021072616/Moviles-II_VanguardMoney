@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../viewmodels/registrar_IA_viewmodel.dart';
-import 'datos_IA_revividos_view.dart';
+import 'egreso/register_bill_view.dart';
 
-/// Pantalla para registrar transacciones escaneando imágenes con OCR
+/// Pantalla para registrar transacciones escaneando imágenes con IA
 class RegistrarConIAScreen extends StatefulWidget {
   final String? idUsuario;
   
@@ -44,15 +44,34 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
     }
 
     final idUsuario = widget.idUsuario ?? 'usuario_default';
+    final viewModel = Provider.of<RegistrarMedianteIAViewModel>(context, listen: false);
     
-    // Navegar a la vista de datos extraídos
-    if (mounted) {
+    // Inicializar Gemini si no está inicializado
+    if (viewModel.errorMessage == null) {
+      await viewModel.initializeGeminiModel();
+    }
+    
+    // Analizar imagen
+    await viewModel.escanearYExtraerFactura(_selectedImage!.path, idUsuario);
+    
+    if (!mounted) return;
+    
+    // Si hubo error, mostrar mensaje
+    if (viewModel.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(viewModel.errorMessage!)),
+      );
+      return;
+    }
+    
+    // Si se extrajeron datos, ir directo al formulario de registro
+    if (viewModel.datosExtraidos != null) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => DatosIARevividosView(
-            imagePath: _selectedImage!.path,
+          builder: (context) => RegisterBillView(
             idUsuario: idUsuario,
+            datosIniciales: viewModel.datosExtraidos,
           ),
         ),
       );
@@ -63,7 +82,14 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registrar con IA'),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.auto_awesome, size: 24),
+            SizedBox(width: 8),
+            Text('Escanear Factura con IA'),
+          ],
+        ),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -95,11 +121,20 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Escanear Factura',
+                        'Analiza tu factura',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.grey[800],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'La IA extraerá los datos automáticamente',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -160,7 +195,7 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
                                 )
                               : const Icon(Icons.auto_awesome),
                           label: Text(
-                            viewModel.isLoading ? 'Analizando imagen...' : 'Procesar imagen',
+                            viewModel.isLoading ? 'Analizando con IA...' : 'Analizar con IA',
                             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -199,12 +234,12 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.lightbulb_outline, color: Colors.indigo[600], size: 20),
+                        Icon(Icons.auto_awesome, color: Colors.indigo[600], size: 20),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Puedes elegir entre tomar una foto o seleccionar una imagen de tu galería para analizar la transacción.',
-                            style: TextStyle(color: Colors.indigo[700], fontSize: 13),
+                            'Toma una foto de tu factura y la IA extraerá automáticamente todos los datos.',
+                            style: TextStyle(color: Colors.indigo[700], fontSize: 13, fontWeight: FontWeight.w500),
                           ),
                         ),
                       ],
