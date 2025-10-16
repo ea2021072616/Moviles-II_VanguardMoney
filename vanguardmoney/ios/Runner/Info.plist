@@ -51,5 +51,7 @@
 	<string>La aplicación necesita acceder a la galería para seleccionar imágenes de recibos.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>La aplicación necesita guardar imágenes de recibos en tu galería.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Necesitamos acceso al micrófono para grabar tus transacciones por voz y analizarlas con IA.</string>
 </dict>
 </plist>

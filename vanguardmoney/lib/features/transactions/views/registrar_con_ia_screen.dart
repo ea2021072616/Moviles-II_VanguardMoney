@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../viewmodels/registrar_IA_viewmodel.dart';
+import '../viewmodels/registrar_voz_viewmodel.dart';
 import 'egreso/register_bill_view.dart';
+import 'registrar_con_voz_screen.dart';
 
 /// Pantalla para registrar transacciones escaneando imágenes con IA
 class RegistrarConIAScreen extends StatefulWidget {
@@ -144,6 +146,61 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
 
                 const SizedBox(height: 24),
 
+                // Botón para registrar con voz
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChangeNotifierProvider(
+                            create: (_) => RegistrarMedianteVozViewModel(),
+                            child: RegistrarConVozScreen(
+                              idUsuario: widget.idUsuario ?? 'usuario_default',
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.mic, size: 24),
+                    label: const Text(
+                      'Registrar con Voz',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                  ),
+                ),
+
+                // Divisor con texto
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        'o escanea tu factura',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
                 // Área de selección de imagen
                 Row(
                   children: [
@@ -223,28 +280,55 @@ class _RegistrarConIAScreenState extends State<RegistrarConIAScreen> {
 
                 const SizedBox(height: 24),
 
-                // Tip informativo
-                Container(
-                    margin: const EdgeInsets.only(top: 16),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.indigo[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.indigo[200]!),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.auto_awesome, color: Colors.indigo[600], size: 20),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Toma una foto de tu factura y la IA extraerá automáticamente todos los datos.',
-                            style: TextStyle(color: Colors.indigo[700], fontSize: 13, fontWeight: FontWeight.w500),
+                // Tips informativos
+                Column(
+                  children: [
+                    // Tip de voz
+                    Container(
+                      margin: const EdgeInsets.only(top: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.purple[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.purple[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.mic, color: Colors.purple[600], size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '¿Prefieres hablar? Usa el registro por voz y la IA detectará automáticamente si es ingreso o egreso.',
+                              style: TextStyle(color: Colors.purple[700], fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 12),
+                    // Tip de escaneo
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.indigo[200]!),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.auto_awesome, color: Colors.indigo[600], size: 20),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Toma una foto de tu factura y la IA extraerá automáticamente todos los datos.',
+                              style: TextStyle(color: Colors.indigo[700], fontSize: 13, fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           );

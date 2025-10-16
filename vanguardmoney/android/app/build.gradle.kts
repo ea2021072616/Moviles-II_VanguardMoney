@@ -10,7 +10,7 @@ plugins {
 
 android {
     namespace = "com.example.vanguardmoney"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36  // Updated for androidx.core:core-ktx:1.17.0
     ndkVersion = "27.0.12077973"
 
     compileOptions {
