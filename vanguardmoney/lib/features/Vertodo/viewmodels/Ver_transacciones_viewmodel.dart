@@ -114,10 +114,10 @@ class VerTransaccionesViewModel extends ChangeNotifier {
           transacciones.add(TransaccionItem(
             id: doc.id,
             categoria: factura.categoria,
-            fecha: DateTime.now(), // Las facturas no tienen fecha, usamos la actual por defecto
-            monto: factura.monto,
+            fecha: factura.invoiceDate, // Ahora usamos la fecha de la factura
+            monto: factura.totalAmount, // Usamos totalAmount en lugar de monto
             tipo: 'gasto',
-            descripcion: factura.descripcion,
+            descripcion: factura.description, // Usamos description en lugar de descripcion
           ));
         } catch (e) {
           print('Error al procesar gasto ${doc.id}: $e');

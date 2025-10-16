@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../viewmodels/edit_transactions_viwmodel.dart';
-import '../services/validaciones.dart';
 import '../../../core/theme/app_colors.dart';
 
 class EditTransactionView extends StatefulWidget {

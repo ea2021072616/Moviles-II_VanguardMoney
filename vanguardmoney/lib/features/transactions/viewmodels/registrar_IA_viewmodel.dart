@@ -78,9 +78,15 @@ class RegistrarMedianteIAViewModel extends ChangeNotifier {
       
       if (kDebugMode) {
         debugPrint('🤖 DATOS EXTRAÍDOS CON GEMINI:');
-        debugPrint('Proveedor: ${datosIA['proveedor']}');
-        debugPrint('Monto: ${datosIA['monto']}');
-        debugPrint('Descripción: ${datosIA['descripcion']}');
+        debugPrint('Número de factura: ${datosIA['invoiceNumber']}');
+        debugPrint('Fecha: ${datosIA['invoiceDate']}');
+        debugPrint('Monto total: ${datosIA['totalAmount']}');
+        debugPrint('Moneda: ${datosIA['currency']}');
+        debugPrint('Proveedor: ${datosIA['supplierName']}');
+        debugPrint('NIF/RFC: ${datosIA['supplierTaxId']}');
+        debugPrint('Cliente: ${datosIA['customerName']}');
+        debugPrint('Descripción: ${datosIA['description']}');
+        debugPrint('Impuestos: ${datosIA['taxAmount']}');
         debugPrint('Lugar: ${datosIA['lugarLocal']}');
         debugPrint('Categoría: ${datosIA['categoria']}');
         debugPrint('═══════════════════════════════════════');
@@ -120,20 +126,27 @@ Analiza esta imagen de factura y extrae la información relevante.
 
 Responde ÚNICAMENTE con un objeto JSON válido (sin markdown, sin bloques de código) con esta estructura exacta:
 {
-  "proveedor": "nombre del negocio o empresa",
-  "monto": "monto total a pagar (solo números con punto decimal, ej: 150.50)",
-  "descripcion": "descripción breve de los productos o servicios",
+  "invoiceNumber": "número de factura único (ej: INV-2025-001)",
+  "invoiceDate": "fecha de emisión en formato YYYY-MM-DD",
+  "totalAmount": "monto total a pagar con impuestos (solo números con punto decimal, ej: 847.00)",
+  "supplierName": "nombre o razón social del proveedor/emisor",
+  "supplierTaxId": "NIF/RFC/RUT del proveedor (número de identificación fiscal)",
+  "description": "descripción breve de los productos o servicios",
+  "taxAmount": "total de impuestos (solo números con punto decimal, ej: 147.00)",
   "lugarLocal": "dirección o ubicación del negocio",
   "categoria": "una de estas categorías: $categoriasDisponibles"
 }
 
 REGLAS IMPORTANTES:
 - Si no encuentras un campo, usa un string vacío ""
-- El monto debe ser solo números con punto decimal (ej: "125.50")
+- Los montos deben ser solo números con punto decimal (ej: "125.50")
+- La fecha debe estar en formato YYYY-MM-DD
 - La categoría DEBE ser una de las listadas arriba (elige la más apropiada basándote en el tipo de negocio)
-- NO incluyas símbolos de moneda en el monto
+- NO incluyas símbolos de moneda en los montos
 - NO incluyas bloques de código markdown
 - Responde SOLO con el JSON, nada más
+- Si ves impuestos como IVA, VAT, GST, inclúyelos en taxAmount
+- El totalAmount ya incluye los impuestos
 ''';
 
       final content = [
@@ -164,7 +177,11 @@ REGLAS IMPORTANTES:
       final Map<String, dynamic> result = json.decode(jsonString);
       
       // Validar campos requeridos
-      final camposRequeridos = ['proveedor', 'monto', 'descripcion', 'lugarLocal', 'categoria'];
+      final camposRequeridos = [
+        'invoiceNumber', 'invoiceDate', 'totalAmount',
+        'supplierName', 'supplierTaxId',
+        'description', 'taxAmount', 'lugarLocal', 'categoria'
+      ];
       for (final campo in camposRequeridos) {
         if (!result.containsKey(campo)) {
           result[campo] = '';

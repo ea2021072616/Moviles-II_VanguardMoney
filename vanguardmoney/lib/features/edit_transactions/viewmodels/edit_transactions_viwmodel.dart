@@ -34,6 +34,7 @@ class EditTransactionViewModel extends ChangeNotifier {
   String? _transaccionId;
   String? _tipoTransaccion;
   String? _idUsuario;
+  Factura? _facturaOriginal; // Para mantener los campos que no se editan
 
   @override
   void dispose() {
@@ -114,11 +115,14 @@ class EditTransactionViewModel extends ChangeNotifier {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
       Factura factura = Factura.fromMap(data);
 
-      // Llenar los controllers con los datos existentes
-      montoController.text = factura.monto.toString();
-      descripcionController.text = factura.descripcion;
+      // Guardar la factura original para mantener los campos que no se editan
+      _facturaOriginal = factura;
+
+      // Llenar los controllers con los datos existentes (usando campos nuevos)
+      montoController.text = factura.totalAmount.toString();
+      descripcionController.text = factura.description;
       categoriaController.text = factura.categoria;
-      proveedorController.text = factura.proveedor;
+      proveedorController.text = factura.supplierName;
       lugarController.text = factura.lugarLocal;
       _idUsuario = factura.idUsuario;
     } catch (e) {
@@ -213,13 +217,21 @@ class EditTransactionViewModel extends ChangeNotifier {
   Future<void> _actualizarGasto() async {
     final monto = double.parse(montoController.text);
 
+    // Crear factura actualizada manteniendo los campos originales que no se editan
     final gastoActualizado = Factura(
       idUsuario: _idUsuario!,
-      proveedor: proveedorController.text,
-      monto: monto,
-      descripcion: descripcionController.text,
-      lugarLocal: lugarController.text,
-      categoria: categoriaController.text,
+      invoiceNumber: _facturaOriginal?.invoiceNumber ?? '', // Mantener original
+      invoiceDate: _facturaOriginal?.invoiceDate ?? DateTime.now(), // Mantener original
+      totalAmount: monto, // ✅ Actualizado
+      supplierName: proveedorController.text, // ✅ Actualizado
+      supplierTaxId: _facturaOriginal?.supplierTaxId ?? '', // Mantener original
+      description: descripcionController.text, // ✅ Actualizado
+      taxAmount: _facturaOriginal?.taxAmount ?? 0.0, // Mantener original
+      lugarLocal: lugarController.text, // ✅ Actualizado
+      categoria: categoriaController.text, // ✅ Actualizado
+      scanImagePath: _facturaOriginal?.scanImagePath, // Mantener original
+      entryMethod: 'Editado', // ✅ Marcar como editado
+      createdAt: _facturaOriginal?.createdAt, // Mantener original
     );
 
     await _firestore
@@ -248,6 +260,7 @@ class EditTransactionViewModel extends ChangeNotifier {
     _transaccionId = null;
     _tipoTransaccion = null;
     _idUsuario = null;
+    _facturaOriginal = null; // Limpiar factura original
     notifyListeners();
   }
 }

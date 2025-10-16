@@ -46,6 +46,8 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
         );
   }
 
+
+
   // Método para formatear fechas
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} - ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
@@ -297,6 +299,9 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
         ? const Color(0xFF377CC8)
         : AppColors.redCoral;
     final IconData icono = esIngreso ? Icons.add_circle : Icons.remove_circle;
+    
+    // Símbolo de moneda fijo
+    final String simboloMoneda = '\$';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12.0),
@@ -337,7 +342,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                   ),
                 ),
                 Text(
-                  '${esIngreso ? '+' : '-'}\$${_formatCurrency(transaccion.monto)}',
+                  '${esIngreso ? '+' : '-'}$simboloMoneda${_formatCurrency(transaccion.monto)}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,

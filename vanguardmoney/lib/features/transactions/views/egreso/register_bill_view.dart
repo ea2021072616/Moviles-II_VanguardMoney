@@ -46,10 +46,29 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
         final viewModel = ref.read(registerBillViewModelProvider);
         final datos = widget.datosIniciales!;
         
-        viewModel.proveedorController.text = datos['proveedor']?.toString() ?? '';
-        viewModel.montoController.text = datos['monto']?.toString() ?? '';
-        viewModel.descripcionController.text = datos['descripcion']?.toString() ?? '';
+        viewModel.invoiceNumberController.text = datos['invoiceNumber']?.toString() ?? '';
+        
+        // Parsear y establecer fecha
+        if (datos['invoiceDate'] != null && datos['invoiceDate'].toString().isNotEmpty) {
+          try {
+            viewModel.setInvoiceDate(DateTime.parse(datos['invoiceDate']));
+          } catch (e) {
+            viewModel.setInvoiceDate(DateTime.now());
+          }
+        }
+        
+        viewModel.totalAmountController.text = datos['totalAmount']?.toString() ?? '';
+        viewModel.supplierNameController.text = datos['supplierName']?.toString() ?? '';
+        viewModel.supplierTaxIdController.text = datos['supplierTaxId']?.toString() ?? '';
+        viewModel.descripcionController.text = datos['description']?.toString() ?? '';
+        viewModel.taxAmountController.text = datos['taxAmount']?.toString() ?? '';
         viewModel.lugarLocalController.text = datos['lugarLocal']?.toString() ?? '';
+        
+        // Establecer método de entrada y ruta de imagen si existe
+        viewModel.setEntryMethod('IA');
+        if (datos['scanImagePath'] != null) {
+          viewModel.setScanImagePath(datos['scanImagePath']);
+        }
         
         // Seleccionar la categoría si existe
         final categoria = datos['categoria']?.toString();
@@ -107,16 +126,17 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
             padding: const EdgeInsets.all(24.0),
             child: Form(
               key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: ListView(
+                shrinkWrap: true,
                 children: [
                   const Text(
-                    'Datos del Egreso',
+                    'Datos de la Factura',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       color: Colors.deepOrange,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   // Banner informativo si los datos vienen de la IA
@@ -142,22 +162,65 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                       ),
                     ),
                   const SizedBox(height: 16),
+                  
+                  // SECCIÓN: IDENTIFICACIÓN
+                  const Text(
+                    '📋 Identificación',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                  ),
+                  const SizedBox(height: 12),
+                  
                   TextFormField(
-                    controller: viewModel.proveedorController,
+                    controller: viewModel.invoiceNumberController,
                     decoration: InputDecoration(
-                      labelText: 'Proveedor',
-                      prefixIcon: const Icon(Icons.business),
+                      labelText: 'Número de Factura',
+                      hintText: 'INV-2025-001',
+                      prefixIcon: const Icon(Icons.numbers),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    validator: validarProveedor,
+                    validator: (value) => value == null || value.isEmpty ? 'Campo requerido' : null,
                   ),
                   const SizedBox(height: 16),
+                  
+                  GestureDetector(
+                    onTap: () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: viewModel.invoiceDate ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (pickedDate != null) {
+                        viewModel.setInvoiceDate(pickedDate);
+                      }
+                    },
+                    child: AbsorbPointer(
+                      child: TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'Fecha de Emisión',
+                          prefixIcon: const Icon(Icons.calendar_today),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        controller: TextEditingController(
+                          text: viewModel.invoiceDate != null
+                              ? '${viewModel.invoiceDate!.day}/${viewModel.invoiceDate!.month}/${viewModel.invoiceDate!.year}'
+                              : '',
+                        ),
+                        validator: (_) => viewModel.invoiceDate == null ? 'Selecciona una fecha' : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
                   TextFormField(
-                    controller: viewModel.montoController,
+                    controller: viewModel.totalAmountController,
                     decoration: InputDecoration(
-                      labelText: 'Monto',
+                      labelText: 'Monto Total',
+                      hintText: '847.00',
                       prefixIcon: const Icon(Icons.attach_money),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -167,22 +230,82 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                     validator: validarMonto,
                   ),
                   const SizedBox(height: 16),
+                  
+                  TextFormField(
+                    controller: viewModel.taxAmountController,
+                    decoration: InputDecoration(
+                      labelText: 'Total de Impuestos',
+                      hintText: '147.00',
+                      prefixIcon: const Icon(Icons.receipt_long),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // SECCIÓN: PROVEEDOR
+                  const Text(
+                    '🏢 Proveedor (Emisor)',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  TextFormField(
+                    controller: viewModel.supplierNameController,
+                    decoration: InputDecoration(
+                      labelText: 'Nombre o Razón Social',
+                      hintText: 'Soluciones Digitales S.L.',
+                      prefixIcon: const Icon(Icons.business),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (value) => value == null || value.isEmpty ? 'Campo requerido' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  TextFormField(
+                    controller: viewModel.supplierTaxIdController,
+                    decoration: InputDecoration(
+                      labelText: 'NIF / RFC / RUT',
+                      hintText: 'B12345678',
+                      prefixIcon: const Icon(Icons.badge),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // SECCIÓN: CONTENIDO
+                  const Text(
+                    '📝 Contenido Básico',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepOrange),
+                  ),
+                  const SizedBox(height: 12),
+                  
                   TextFormField(
                     controller: viewModel.descripcionController,
                     decoration: InputDecoration(
                       labelText: 'Descripción',
+                      hintText: 'Servicios informáticos',
                       prefixIcon: const Icon(Icons.description),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
+                    maxLines: 2,
                     validator: validarDescripcion,
                   ),
                   const SizedBox(height: 16),
+                  
                   TextFormField(
                     controller: viewModel.lugarLocalController,
                     decoration: InputDecoration(
-                      labelText: 'Lugar/Local',
+                      labelText: 'Lugar/Dirección',
+                      hintText: 'Calle Principal 123',
                       prefixIcon: const Icon(Icons.location_on),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -191,6 +314,7 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                     validator: validarLugarLocal,
                   ),
                   const SizedBox(height: 16),
+                  
                   // Sección de categorías con botón para gestionar
                   Row(
                     children: [
@@ -253,7 +377,7 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.save),
-                      label: const Text('Registrar'),
+                      label: const Text('Registrar Factura'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.deepOrange,
                         foregroundColor: Colors.white,
@@ -272,10 +396,11 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  'Egreso registrado correctamente',
+                                  'Factura registrada correctamente',
                                 ),
                               ),
                             );
+                            Navigator.of(context).pop();
                           }
                         }
                       },

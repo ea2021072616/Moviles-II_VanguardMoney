@@ -15,9 +15,15 @@ class DetalleTransaccion {
   final String? metodoPago;
   final String? origen;
 
-  // Campos específicos de gastos/facturas
-  final String? proveedor;
+  // Campos específicos de gastos/facturas - NUEVOS CAMPOS
+  final String? invoiceNumber;
+  final String? supplierName;
+  final String? supplierTaxId;
+  final double? taxAmount;
   final String? lugarLocal;
+  final String? scanImagePath;
+  final String? entryMethod;
+  final DateTime? createdAt;
 
   DetalleTransaccion({
     required this.id,
@@ -26,10 +32,18 @@ class DetalleTransaccion {
     required this.monto,
     required this.fecha,
     required this.descripcion,
+    // Campos de ingreso
     this.metodoPago,
     this.origen,
-    this.proveedor,
+    // Campos de factura
+    this.invoiceNumber,
+    this.supplierName,
+    this.supplierTaxId,
+    this.taxAmount,
     this.lugarLocal,
+    this.scanImagePath,
+    this.entryMethod,
+    this.createdAt,
   });
 
   // Constructor desde un Ingreso
@@ -52,11 +66,17 @@ class DetalleTransaccion {
       id: docId,
       tipo: 'gasto',
       categoria: factura.categoria,
-      monto: factura.monto,
-      fecha: DateTime.now(), // Las facturas no tienen fecha en el modelo actual
-      descripcion: factura.descripcion,
-      proveedor: factura.proveedor,
+      monto: factura.totalAmount,
+      fecha: factura.invoiceDate,
+      descripcion: factura.description,
+      invoiceNumber: factura.invoiceNumber,
+      supplierName: factura.supplierName,
+      supplierTaxId: factura.supplierTaxId,
+      taxAmount: factura.taxAmount,
       lugarLocal: factura.lugarLocal,
+      scanImagePath: factura.scanImagePath,
+      entryMethod: factura.entryMethod,
+      createdAt: factura.createdAt,
     );
   }
 }

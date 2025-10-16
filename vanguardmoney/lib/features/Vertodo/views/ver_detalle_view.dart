@@ -137,6 +137,9 @@ class _VerDetalleViewState extends State<VerDetalleView> {
     VerDetalleViewModel viewModel,
     DetalleTransaccion detalle,
   ) {
+    // Símbolo de moneda fijo (dólares)
+    String simboloMoneda = '\$';
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -170,13 +173,66 @@ class _VerDetalleViewState extends State<VerDetalleView> {
           ),
           const SizedBox(height: 8),
           Text(
-            '\$${detalle.monto.toStringAsFixed(2)}',
+            '$simboloMoneda${detalle.monto.toStringAsFixed(2)}',
             style: TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.bold,
               color: viewModel.colorTipo,
             ),
           ),
+          // Mostrar número de factura si existe
+          if (detalle.tipo == 'gasto' && 
+              detalle.invoiceNumber != null && 
+              detalle.invoiceNumber!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: viewModel.colorTipo.withOpacity(0.3),
+                ),
+              ),
+              child: Text(
+                detalle.invoiceNumber!,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: viewModel.colorTipo,
+                ),
+              ),
+            ),
+          ],
+          // Mostrar badge de método de entrada si es IA
+          if (detalle.tipo == 'gasto' && 
+              detalle.entryMethod != null && 
+              detalle.entryMethod!.toLowerCase() == 'ia') ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.shade300),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.auto_awesome, size: 14, color: Colors.blue),
+                  SizedBox(width: 4),
+                  Text(
+                    'Registrado con IA',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -258,36 +314,132 @@ class _VerDetalleViewState extends State<VerDetalleView> {
   }
 
   Widget _buildSeccionGasto(DetalleTransaccion detalle) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Detalles del Gasto',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return Column(
+      children: [
+        // Información de Identificación
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '📋 Identificación de Factura',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const Divider(),
+                const SizedBox(height: 8),
+                if (detalle.invoiceNumber != null && detalle.invoiceNumber!.isNotEmpty)
+                  _buildInfoRow(
+                    icon: Icons.numbers,
+                    label: 'Número de Factura',
+                    value: detalle.invoiceNumber!,
+                  ),
+                if (detalle.invoiceNumber != null && detalle.invoiceNumber!.isNotEmpty)
+                  const SizedBox(height: 12),
+                if (detalle.taxAmount != null && detalle.taxAmount! > 0)
+                  _buildInfoRow(
+                    icon: Icons.receipt_long,
+                    label: 'Impuestos',
+                    value: '\$${detalle.taxAmount!.toStringAsFixed(2)}',
+                  ),
+                if (detalle.taxAmount != null && detalle.taxAmount! > 0)
+                  const SizedBox(height: 12),
+                _buildInfoRow(
+                  icon: Icons.calculate_outlined,
+                  label: 'Total (con impuestos)',
+                  value: '\$${detalle.monto.toStringAsFixed(2)}',
+                ),
+              ],
             ),
-            const Divider(),
-            const SizedBox(height: 8),
-            if (detalle.proveedor != null && detalle.proveedor!.isNotEmpty)
-              _buildInfoRow(
-                icon: Icons.business_outlined,
-                label: 'Proveedor',
-                value: detalle.proveedor!,
-              ),
-            if (detalle.proveedor != null && detalle.proveedor!.isNotEmpty)
-              const SizedBox(height: 12),
-            if (detalle.lugarLocal != null && detalle.lugarLocal!.isNotEmpty)
-              _buildInfoRow(
-                icon: Icons.location_on_outlined,
-                label: 'Lugar',
-                value: detalle.lugarLocal!,
-              ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 16),
+        
+        // Información del Proveedor
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '🏢 Proveedor (Emisor)',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const Divider(),
+                const SizedBox(height: 8),
+                if (detalle.supplierName != null && detalle.supplierName!.isNotEmpty)
+                  _buildInfoRow(
+                    icon: Icons.business,
+                    label: 'Nombre o Razón Social',
+                    value: detalle.supplierName!,
+                  ),
+                if (detalle.supplierName != null && detalle.supplierName!.isNotEmpty)
+                  const SizedBox(height: 12),
+                if (detalle.supplierTaxId != null && detalle.supplierTaxId!.isNotEmpty)
+                  _buildInfoRow(
+                    icon: Icons.badge_outlined,
+                    label: 'NIF / RFC / RUT',
+                    value: detalle.supplierTaxId!,
+                  ),
+                if (detalle.supplierTaxId != null && detalle.supplierTaxId!.isNotEmpty)
+                  const SizedBox(height: 12),
+                if (detalle.lugarLocal != null && detalle.lugarLocal!.isNotEmpty)
+                  _buildInfoRow(
+                    icon: Icons.location_on_outlined,
+                    label: 'Dirección',
+                    value: detalle.lugarLocal!,
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Información del Sistema
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '🔧 Información del Sistema',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const Divider(),
+                const SizedBox(height: 8),
+                if (detalle.entryMethod != null && detalle.entryMethod!.isNotEmpty)
+                  _buildInfoRow(
+                    icon: Icons.input_outlined,
+                    label: 'Método de Registro',
+                    value: detalle.entryMethod!,
+                  ),
+                if (detalle.entryMethod != null && detalle.entryMethod!.isNotEmpty)
+                  const SizedBox(height: 12),
+                if (detalle.createdAt != null)
+                  _buildInfoRow(
+                    icon: Icons.access_time,
+                    label: 'Fecha de Registro',
+                    value: DateFormat('dd/MM/yyyy HH:mm').format(detalle.createdAt!),
+                  ),
+                if (detalle.createdAt != null)
+                  const SizedBox(height: 12),
+                if (detalle.scanImagePath != null && detalle.scanImagePath!.isNotEmpty)
+                  _buildInfoRow(
+                    icon: Icons.image_outlined,
+                    label: 'Imagen Escaneada',
+                    value: 'Disponible',
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
