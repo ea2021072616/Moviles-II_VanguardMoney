@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+import '../../financial_plans/services/financial_plans_service.dart';
+import '../plan_analyzer.dart';
 
 class AiAnalysisPage extends ConsumerWidget {
   const AiAnalysisPage({super.key});
@@ -14,139 +18,256 @@ class AiAnalysisPage extends ConsumerWidget {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
-              Theme.of(context).colorScheme.surface,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                'Análisis inteligente de tus finanzas',
+                style: Theme.of(context).textTheme.headlineSmall,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+
+              // Botones principales en Wrap para evitar overflow
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                alignment: WrapAlignment.center,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Inicia sesión para ejecutar el análisis')),
+                        );
+                        return;
+                      }
+
+                      final analyzer = PlanAnalyzer();
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => const Center(child: CircularProgressIndicator()),
+                      );
+
+                      try {
+                        final result = await analyzer.analyzeUserOverview(user.uid);
+                        if (context.mounted) Navigator.of(context).pop();
+
+                        // Evitar bloqueo del Navigator: mostrar bottom sheet en el siguiente frame
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!context.mounted) return;
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (ctx) => Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: _buildAnalysisBottomSheet(context, result),
+                            ),
+                          );
+                        });
+                      } catch (e) {
+                        if (context.mounted) Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al ejecutar análisis: $e')));
+                      }
+                    },
+                    icon: const Icon(Icons.analytics),
+                    label: const Text('Ejecutar análisis'),
+                  ),
+
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Inicia sesión para ejecutar el análisis')),
+                        );
+                        return;
+                      }
+
+                      final fps = FinancialPlansService();
+                      final now = DateTime.now();
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => const Center(child: CircularProgressIndicator()),
+                      );
+
+                      try {
+                        final plan = await fps.getPlanByMonth(userId: user.uid, year: now.year, month: now.month);
+                        if (context.mounted) Navigator.of(context).pop();
+                        if (plan == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('No hay un plan activo para el mes actual')),
+                          );
+                          return;
+                        }
+
+                        final analyzer = PlanAnalyzer();
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) => const Center(child: CircularProgressIndicator()),
+                        );
+
+                        final planResult = await analyzer.analyzePlan(plan);
+                        if (context.mounted) Navigator.of(context).pop();
+
+                        if (!context.mounted) return;
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text('Análisis del Plan: ${planResult['planName']}'),
+                            content: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Uso del presupuesto: ${ (planResult['usagePercentage'] as double).toStringAsFixed(1) }%'),
+                                  Text('Gastado total: \$${ (planResult['totalSpent'] as double).toStringAsFixed(2) } / \$${ (planResult['totalBudget'] as double).toStringAsFixed(2) }'),
+                                  const SizedBox(height: 8),
+                                  const Text('Categorías (resumen):'),
+                                  ...((planResult['categories'] as List).map((c) => Text('- ${c['categoryName']}: gastado \$${(c['spent'] as double).toStringAsFixed(2)} / presupuesto \$${(c['budget'] as double).toStringAsFixed(2)} ${ (c['isOverBudget'] as bool) ? "(Sobre presupuesto)" : "" }'))),
+                                ],
+                              ),
+                            ),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar')),
+                            ],
+                          ),
+                        );
+                      } catch (e) {
+                        if (context.mounted) Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al analizar plan: $e')));
+                      }
+                    },
+                    icon: const Icon(Icons.event_note),
+                    label: const Text('Analizar plan actual'),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              Text(
+                'Estamos desarrollando un sistema de análisis inteligente que te dará insights personalizados sobre tus finanzas usando inteligencia artificial.',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 32),
+
+              // Lista de características próximas
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Características que vienen:',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFeatureItem(context, Icons.trending_up, 'Análisis de patrones de gasto'),
+                    _buildFeatureItem(context, Icons.lightbulb, 'Recomendaciones personalizadas'),
+                    _buildFeatureItem(context, Icons.timeline, 'Predicciones financieras'),
+                    _buildFeatureItem(context, Icons.insights, 'Insights inteligentes automáticos'),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Header con animación
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.secondary,
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                        offset: const Offset(0, 8),
-                        blurRadius: 20,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      // Ícono animado de IA
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.psychology,
-                          size: 64,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Análisis Inteligente',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '¡Próximamente!',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                
-                // Descripción
-                Text(
-                  'Estamos desarrollando un sistema de análisis inteligente que te dará insights '
-                  'personalizados sobre tus finanzas usando inteligencia artificial.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                
-                // Lista de características próximas
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Características que vienen:',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildFeatureItem(
-                        context,
-                        Icons.trending_up,
-                        'Análisis de patrones de gasto',
-                      ),
-                      _buildFeatureItem(
-                        context,
-                        Icons.lightbulb,
-                        'Recomendaciones personalizadas',
-                      ),
-                      _buildFeatureItem(
-                        context,
-                        Icons.timeline,
-                        'Predicciones financieras',
-                      ),
-                      _buildFeatureItem(
-                        context,
-                        Icons.insights,
-                        'Insights inteligentes automáticos',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+      ),
+    );
+  }
+
+  Widget _buildAnalysisBottomSheet(BuildContext context, Map<String, dynamic> result) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Resumen de Análisis', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.account_balance_wallet),
+            title: const Text('Balance'),
+            subtitle: Text('\$${(result['balance'] as double).toStringAsFixed(2)}'),
           ),
         ),
-      ),
+        const SizedBox(height: 8),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.trending_up),
+            title: const Text('Gastos totales'),
+            subtitle: Text('\$${(result['totalGastos'] as double).toStringAsFixed(2)}'),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text('Top categorías', style: Theme.of(context).textTheme.bodyLarge),
+        const SizedBox(height: 8),
+        ...((result['topCategories'] as List).map((t) => Card(
+              child: ListTile(
+                leading: const Icon(Icons.label),
+                title: Text(t['category']),
+                trailing: Text('\$${(t['amount'] as double).toStringAsFixed(2)}'),
+              ),
+            ))),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () async {
+                final analyzer = PlanAnalyzer();
+                final user = FirebaseAuth.instance.currentUser!;
+                final runId = await analyzer.saveAnalysisRun(user.uid, result);
+                if (runId != null) {
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Análisis guardado')));
+                }
+              },
+              icon: const Icon(Icons.save),
+              label: const Text('Guardar análisis'),
+            ),
+
+            ElevatedButton.icon(
+              onPressed: () async {
+                try {
+                  final model = FirebaseAI.googleAI().generativeModel(model: 'gemini-2.0-flash-exp');
+                  final prompt = 'Resume los hallazgos financieros y sugiere 3 acciones concretas para mejorar el balance. Datos: ${result}';
+                  final content = [Content.multi([TextPart(prompt)])];
+                  final resp = await model.generateContent(content);
+                  final text = resp.text ?? 'Sin respuesta';
+                  if (context.mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (dCtx) => AlertDialog(
+                        title: const Text('Explicación IA'),
+                        content: SingleChildScrollView(child: Text(text)),
+                        actions: [TextButton(onPressed: () => Navigator.pop(dCtx), child: const Text('Cerrar'))],
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al generar explicación: $e')));
+                }
+              },
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Explicar con IA'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+      ],
     );
   }
 
@@ -155,18 +276,9 @@ class AiAnalysisPage extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
+          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
         ],
       ),
     );
