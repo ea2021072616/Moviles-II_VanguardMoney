@@ -141,6 +141,82 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
     state = state.copyWithProfile(updatedProfile);
   }
 
+  // 🆕 MÉTODOS PARA NUEVOS CAMPOS DEMOGRÁFICOS
+
+  /// Actualizar estado civil
+  void updateEstadoCivil(String? estadoCivil) {
+    final updatedProfile = state.profile.copyWith(estadoCivil: estadoCivil);
+    state = state.copyWithProfile(updatedProfile);
+    if (state.validationErrors.isNotEmpty) {
+      _validateProfile();
+    }
+  }
+
+  /// Actualizar número de dependientes
+  void updateNumeroDependientes(int? numeroDependientes) {
+    final updatedProfile = state.profile.copyWith(
+      numeroDependientes: numeroDependientes,
+    );
+    state = state.copyWithProfile(updatedProfile);
+    if (state.validationErrors.isNotEmpty) {
+      _validateProfile();
+    }
+  }
+
+  /// Actualizar número de dependientes desde string
+  void updateNumeroDependientesFromString(String text) {
+    final numero = int.tryParse(text);
+    updateNumeroDependientes(numero);
+  }
+
+  /// Actualizar si tiene hijos
+  void updateTieneHijos(bool? tieneHijos) {
+    final updatedProfile = state.profile.copyWith(tieneHijos: tieneHijos);
+    state = state.copyWithProfile(updatedProfile);
+    if (state.validationErrors.isNotEmpty) {
+      _validateProfile();
+    }
+  }
+
+  /// Actualizar nivel de educación
+  void updateNivelEducacion(String? nivelEducacion) {
+    final updatedProfile = state.profile.copyWith(
+      nivelEducacion: nivelEducacion,
+    );
+    state = state.copyWithProfile(updatedProfile);
+    if (state.validationErrors.isNotEmpty) {
+      _validateProfile();
+    }
+  }
+
+  /// Actualizar objetivos financieros
+  void updateObjetivosFinancieros(List<String>? objetivos) {
+    final updatedProfile = state.profile.copyWith(
+      objetivosFinancieros: objetivos,
+    );
+    state = state.copyWithProfile(updatedProfile);
+    if (state.validationErrors.isNotEmpty) {
+      _validateProfile();
+    }
+  }
+
+  /// Toggle un objetivo financiero específico
+  void toggleObjetivoFinanciero(String objetivo) {
+    final currentObjetivos = List<String>.from(
+      state.profile.objetivosFinancieros ?? [],
+    );
+
+    if (currentObjetivos.contains(objetivo)) {
+      currentObjetivos.remove(objetivo);
+    } else {
+      currentObjetivos.add(objetivo);
+    }
+
+    updateObjetivosFinancieros(
+      currentObjetivos.isEmpty ? null : currentObjetivos,
+    );
+  }
+
   /// Seleccionar imagen desde la cámara
   Future<void> pickImageFromCamera() async {
     final currentUser = _ref.read(currentUserProvider);

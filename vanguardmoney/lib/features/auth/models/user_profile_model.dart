@@ -9,12 +9,23 @@ class UserProfileModel {
   final int? edad;
   final String? ocupacion;
   final double? ingresoMensualAprox;
+
+  // 🆕 NUEVOS CAMPOS DEMOGRÁFICOS para análisis de IA personalizado
+  final String? estadoCivil; // Soltero, Casado, Divorciado, Viudo, Unión libre
+  final int?
+  numeroDependientes; // Número total de personas que dependen económicamente
+  final bool? tieneHijos; // Si tiene hijos o no
+  final String?
+  nivelEducacion; // Primaria, Secundaria, Técnico, Universitario, Posgrado
+  final List<String>?
+  objetivosFinancieros; // Ahorro, Inversión, Deuda, Vivienda, Educación, Retiro, etc.
+
   final DateTime createdAt;
   final bool verified;
   final int loginAttempts;
   final DateTime? lastAttempt;
 
-  const UserProfileModel({
+  UserProfileModel({
     required this.uid,
     required this.username,
     required this.email,
@@ -22,6 +33,11 @@ class UserProfileModel {
     this.edad,
     this.ocupacion,
     this.ingresoMensualAprox,
+    this.estadoCivil,
+    this.numeroDependientes,
+    this.tieneHijos,
+    this.nivelEducacion,
+    this.objetivosFinancieros,
     required this.createdAt,
     required this.verified,
     this.loginAttempts = 0,
@@ -37,6 +53,11 @@ class UserProfileModel {
     int? edad,
     String? ocupacion,
     double? ingresoMensualAprox,
+    String? estadoCivil,
+    int? numeroDependientes,
+    bool? tieneHijos,
+    String? nivelEducacion,
+    List<String>? objetivosFinancieros,
     bool verified = false,
   }) {
     return UserProfileModel(
@@ -47,6 +68,11 @@ class UserProfileModel {
       edad: edad,
       ocupacion: ocupacion,
       ingresoMensualAprox: ingresoMensualAprox,
+      estadoCivil: estadoCivil,
+      numeroDependientes: numeroDependientes,
+      tieneHijos: tieneHijos,
+      nivelEducacion: nivelEducacion,
+      objetivosFinancieros: objetivosFinancieros,
       createdAt: DateTime.now(),
       verified: verified,
       loginAttempts: 0,
@@ -63,6 +89,13 @@ class UserProfileModel {
       edad: map['edad']?.toInt(),
       ocupacion: map['ocupacion'],
       ingresoMensualAprox: map['ingresoMensualAprox']?.toDouble(),
+      estadoCivil: map['estadoCivil'],
+      numeroDependientes: map['numeroDependientes']?.toInt(),
+      tieneHijos: map['tieneHijos'],
+      nivelEducacion: map['nivelEducacion'],
+      objetivosFinancieros: map['objetivosFinancieros'] != null
+          ? List<String>.from(map['objetivosFinancieros'])
+          : null,
       createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       verified: map['verified'] ?? false,
       loginAttempts: map['loginAttempts'] ?? 0,
@@ -80,6 +113,11 @@ class UserProfileModel {
       'edad': edad,
       'ocupacion': ocupacion,
       'ingresoMensualAprox': ingresoMensualAprox,
+      'estadoCivil': estadoCivil,
+      'numeroDependientes': numeroDependientes,
+      'tieneHijos': tieneHijos,
+      'nivelEducacion': nivelEducacion,
+      'objetivosFinancieros': objetivosFinancieros,
       'createdAt': Timestamp.fromDate(createdAt),
       'verified': verified,
       'loginAttempts': loginAttempts,
@@ -98,6 +136,11 @@ class UserProfileModel {
     int? edad,
     String? ocupacion,
     double? ingresoMensualAprox,
+    String? estadoCivil,
+    int? numeroDependientes,
+    bool? tieneHijos,
+    String? nivelEducacion,
+    List<String>? objetivosFinancieros,
     DateTime? createdAt,
     bool? verified,
     int? loginAttempts,
@@ -111,6 +154,11 @@ class UserProfileModel {
       edad: edad ?? this.edad,
       ocupacion: ocupacion ?? this.ocupacion,
       ingresoMensualAprox: ingresoMensualAprox ?? this.ingresoMensualAprox,
+      estadoCivil: estadoCivil ?? this.estadoCivil,
+      numeroDependientes: numeroDependientes ?? this.numeroDependientes,
+      tieneHijos: tieneHijos ?? this.tieneHijos,
+      nivelEducacion: nivelEducacion ?? this.nivelEducacion,
+      objetivosFinancieros: objetivosFinancieros ?? this.objetivosFinancieros,
       createdAt: createdAt ?? this.createdAt,
       verified: verified ?? this.verified,
       loginAttempts: loginAttempts ?? this.loginAttempts,
@@ -164,4 +212,3 @@ class UserProfileModel {
         'loginAttempts: $loginAttempts)';
   }
 }
-

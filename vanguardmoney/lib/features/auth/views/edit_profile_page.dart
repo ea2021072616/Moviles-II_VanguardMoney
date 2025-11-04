@@ -247,6 +247,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
               SizedBox(height: AppSizes.spaceXXL),
 
+              // 🆕 SECCIÓN DE DATOS DEMOGRÁFICOS
+              _buildDemographicSection(context),
+
+              SizedBox(height: AppSizes.spaceXXL),
+
               // Mostrar errores de validación
               if (editProfileState.validationErrors.isNotEmpty)
                 _buildValidationErrors(
@@ -632,6 +637,347 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           ),
         ],
       ),
+    );
+  }
+
+  // 🆕 SECCIÓN COMPLETA DE DATOS DEMOGRÁFICOS
+  Widget _buildDemographicSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Título de la sección
+        Row(
+          children: [
+            Icon(Icons.people_outline, color: AppColors.blueClassic, size: 24),
+            SizedBox(width: AppSizes.spaceXS),
+            Text(
+              'Información Demográfica',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.blueClassic,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: AppSizes.spaceXS),
+        Text(
+          'Ayúdanos a personalizar tu análisis financiero con IA',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.greyDark),
+        ),
+        SizedBox(height: AppSizes.spaceL),
+
+        // Estado Civil
+        _buildEstadoCivilField(context),
+        SizedBox(height: AppSizes.spaceL),
+
+        // Tiene Hijos
+        _buildTieneHijosField(context),
+        SizedBox(height: AppSizes.spaceL),
+
+        // Número de Dependientes
+        _buildNumeroDependientesField(context),
+        SizedBox(height: AppSizes.spaceL),
+
+        // Nivel de Educación
+        _buildNivelEducacionField(context),
+        SizedBox(height: AppSizes.spaceL),
+
+        // Objetivos Financieros
+        _buildObjetivosFinancierosField(context),
+      ],
+    );
+  }
+
+  Widget _buildEstadoCivilField(BuildContext context) {
+    final editState = ref.watch(editProfileProvider);
+    final estadoCivilActual = editState.profile.estadoCivil;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Estado Civil',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        SizedBox(height: AppSizes.spaceXS),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children:
+              [
+                'Soltero/a',
+                'Casado/a',
+                'Divorciado/a',
+                'Viudo/a',
+                'Unión Libre',
+              ].map((estado) {
+                final isSelected = estadoCivilActual == estado;
+                return ChoiceChip(
+                  label: Text(estado),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    ref
+                        .read(editProfileProvider.notifier)
+                        .updateEstadoCivil(selected ? estado : null);
+                  },
+                  selectedColor: AppColors.blueClassic.withOpacity(0.2),
+                  labelStyle: TextStyle(
+                    color: isSelected
+                        ? AppColors.blueClassic
+                        : AppColors.greyDark,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                );
+              }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTieneHijosField(BuildContext context) {
+    final editState = ref.watch(editProfileProvider);
+    final tieneHijos = editState.profile.tieneHijos;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '¿Tienes hijos?',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        SizedBox(height: AppSizes.spaceXS),
+        Row(
+          children: [
+            Expanded(
+              child: ChoiceChip(
+                label: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.check,
+                      size: 18,
+                      color: tieneHijos == true
+                          ? AppColors.greenJade
+                          : AppColors.greyDark,
+                    ),
+                    SizedBox(width: 4),
+                    Text('Sí'),
+                  ],
+                ),
+                selected: tieneHijos == true,
+                onSelected: (selected) {
+                  ref.read(editProfileProvider.notifier).updateTieneHijos(true);
+                },
+                selectedColor: AppColors.greenJade.withOpacity(0.2),
+              ),
+            ),
+            SizedBox(width: AppSizes.spaceM),
+            Expanded(
+              child: ChoiceChip(
+                label: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.close,
+                      size: 18,
+                      color: tieneHijos == false
+                          ? AppColors.redCoral
+                          : AppColors.greyDark,
+                    ),
+                    SizedBox(width: 4),
+                    Text('No'),
+                  ],
+                ),
+                selected: tieneHijos == false,
+                onSelected: (selected) {
+                  ref
+                      .read(editProfileProvider.notifier)
+                      .updateTieneHijos(false);
+                },
+                selectedColor: AppColors.greyLight,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNumeroDependientesField(BuildContext context) {
+    final editState = ref.watch(editProfileProvider);
+    final numeroDependientes = editState.profile.numeroDependientes;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Número de Dependientes Económicos',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        SizedBox(height: AppSizes.spaceXS),
+        Text(
+          'Personas que dependen económicamente de ti (hijos, padres, etc.)',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.greyDark),
+        ),
+        SizedBox(height: AppSizes.spaceXS),
+        TextFormField(
+          initialValue: numeroDependientes?.toString() ?? '',
+          decoration: InputDecoration(
+            hintText: '0',
+            prefixIcon: Icon(Icons.family_restroom_outlined),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surface,
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(2),
+          ],
+          onChanged: (value) {
+            ref
+                .read(editProfileProvider.notifier)
+                .updateNumeroDependientesFromString(value);
+          },
+          textInputAction: TextInputAction.next,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNivelEducacionField(BuildContext context) {
+    final editState = ref.watch(editProfileProvider);
+    final nivelEducacion = editState.profile.nivelEducacion;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Nivel de Educación',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        SizedBox(height: AppSizes.spaceXS),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children:
+              [
+                'Primaria',
+                'Secundaria',
+                'Técnico',
+                'Universitario',
+                'Posgrado',
+              ].map((nivel) {
+                final isSelected = nivelEducacion == nivel;
+                return ChoiceChip(
+                  label: Text(nivel),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    ref
+                        .read(editProfileProvider.notifier)
+                        .updateNivelEducacion(selected ? nivel : null);
+                  },
+                  selectedColor: AppColors.blueClassic.withOpacity(0.2),
+                  labelStyle: TextStyle(
+                    color: isSelected
+                        ? AppColors.blueClassic
+                        : AppColors.greyDark,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                );
+              }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildObjetivosFinancierosField(BuildContext context) {
+    final editState = ref.watch(editProfileProvider);
+    final objetivos = editState.profile.objetivosFinancieros ?? [];
+
+    final objetivosDisponibles = {
+      'Ahorro': Icons.savings_outlined,
+      'Inversión': Icons.trending_up,
+      'Pagar Deudas': Icons.money_off,
+      'Comprar Vivienda': Icons.home_outlined,
+      'Educación': Icons.school_outlined,
+      'Retiro': Icons.elderly_outlined,
+      'Viajes': Icons.flight_outlined,
+      'Emergencias': Icons.health_and_safety_outlined,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Objetivos Financieros',
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        SizedBox(height: AppSizes.spaceXS),
+        Text(
+          'Selecciona todos los que apliquen',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.greyDark),
+        ),
+        SizedBox(height: AppSizes.spaceXS),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: objetivosDisponibles.entries.map((entry) {
+            final objetivo = entry.key;
+            final icon = entry.value;
+            final isSelected = objetivos.contains(objetivo);
+
+            return FilterChip(
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 16,
+                    color: isSelected
+                        ? AppColors.blueClassic
+                        : AppColors.greyDark,
+                  ),
+                  SizedBox(width: 4),
+                  Text(objetivo),
+                ],
+              ),
+              selected: isSelected,
+              onSelected: (selected) {
+                ref
+                    .read(editProfileProvider.notifier)
+                    .toggleObjetivoFinanciero(objetivo);
+              },
+              selectedColor: AppColors.blueClassic.withOpacity(0.2),
+              checkmarkColor: AppColors.blueClassic,
+              labelStyle: TextStyle(
+                color: isSelected ? AppColors.blueClassic : AppColors.greyDark,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 

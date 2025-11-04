@@ -8,6 +8,13 @@ class EditProfileModel {
   final double? ingresoMensualAprox;
   final String? photoUrl;
 
+  // 🆕 NUEVOS CAMPOS DEMOGRÁFICOS
+  final String? estadoCivil;
+  final int? numeroDependientes;
+  final bool? tieneHijos;
+  final String? nivelEducacion;
+  final List<String>? objetivosFinancieros;
+
   const EditProfileModel({
     required this.username,
     required this.currency,
@@ -15,6 +22,11 @@ class EditProfileModel {
     this.ocupacion,
     this.ingresoMensualAprox,
     this.photoUrl,
+    this.estadoCivil,
+    this.numeroDependientes,
+    this.tieneHijos,
+    this.nivelEducacion,
+    this.objetivosFinancieros,
   });
 
   /// Factory constructor desde UserProfileModel
@@ -26,6 +38,11 @@ class EditProfileModel {
       ocupacion: userProfile?.ocupacion,
       ingresoMensualAprox: userProfile?.ingresoMensualAprox,
       photoUrl: null, // UserProfileModel no tiene photoUrl
+      estadoCivil: userProfile?.estadoCivil,
+      numeroDependientes: userProfile?.numeroDependientes,
+      tieneHijos: userProfile?.tieneHijos,
+      nivelEducacion: userProfile?.nivelEducacion,
+      objetivosFinancieros: userProfile?.objetivosFinancieros,
     );
   }
 
@@ -42,6 +59,11 @@ class EditProfileModel {
     String? ocupacion,
     double? ingresoMensualAprox,
     String? photoUrl,
+    String? estadoCivil,
+    int? numeroDependientes,
+    bool? tieneHijos,
+    String? nivelEducacion,
+    List<String>? objetivosFinancieros,
   }) {
     return EditProfileModel(
       username: username ?? this.username,
@@ -50,6 +72,11 @@ class EditProfileModel {
       ocupacion: ocupacion ?? this.ocupacion,
       ingresoMensualAprox: ingresoMensualAprox ?? this.ingresoMensualAprox,
       photoUrl: photoUrl ?? this.photoUrl,
+      estadoCivil: estadoCivil ?? this.estadoCivil,
+      numeroDependientes: numeroDependientes ?? this.numeroDependientes,
+      tieneHijos: tieneHijos ?? this.tieneHijos,
+      nivelEducacion: nivelEducacion ?? this.nivelEducacion,
+      objetivosFinancieros: objetivosFinancieros ?? this.objetivosFinancieros,
     );
   }
 
@@ -79,6 +106,27 @@ class EditProfileModel {
 
     if (photoUrl != null) {
       updateData['photoUrl'] = photoUrl;
+    }
+
+    // 🆕 Agregar nuevos campos demográficos
+    if (estadoCivil != null) {
+      updateData['estadoCivil'] = estadoCivil;
+    }
+
+    if (numeroDependientes != null) {
+      updateData['numeroDependientes'] = numeroDependientes;
+    }
+
+    if (tieneHijos != null) {
+      updateData['tieneHijos'] = tieneHijos;
+    }
+
+    if (nivelEducacion != null) {
+      updateData['nivelEducacion'] = nivelEducacion;
+    }
+
+    if (objetivosFinancieros != null) {
+      updateData['objetivosFinancieros'] = objetivosFinancieros;
     }
 
     return updateData;
@@ -148,18 +196,34 @@ class EditProfileModel {
         other.edad == edad &&
         other.ocupacion == ocupacion &&
         other.ingresoMensualAprox == ingresoMensualAprox &&
-        other.photoUrl == photoUrl;
+        other.photoUrl == photoUrl &&
+        other.estadoCivil == estadoCivil &&
+        other.numeroDependientes == numeroDependientes &&
+        other.tieneHijos == tieneHijos &&
+        other.nivelEducacion == nivelEducacion;
   }
 
   @override
   int get hashCode => Object.hash(
-      username, currency, edad, ocupacion, ingresoMensualAprox, photoUrl);
+    username,
+    currency,
+    edad,
+    ocupacion,
+    ingresoMensualAprox,
+    photoUrl,
+    estadoCivil,
+    numeroDependientes,
+    tieneHijos,
+    nivelEducacion,
+  );
 
   @override
   String toString() {
     return 'EditProfileModel(username: $username, currency: $currency, '
         'edad: $edad, ocupacion: $ocupacion, '
-        'ingresoMensualAprox: $ingresoMensualAprox, photoUrl: $photoUrl)';
+        'ingresoMensualAprox: $ingresoMensualAprox, photoUrl: $photoUrl, '
+        'estadoCivil: $estadoCivil, numeroDependientes: $numeroDependientes, '
+        'tieneHijos: $tieneHijos, nivelEducacion: $nivelEducacion)';
   }
 }
 

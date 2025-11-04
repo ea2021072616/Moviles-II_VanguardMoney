@@ -29,7 +29,7 @@ android {
         applicationId = "com.example.vanguardmoney"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion  // Updated to be compatible with Firebase Auth 23.2.1
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
