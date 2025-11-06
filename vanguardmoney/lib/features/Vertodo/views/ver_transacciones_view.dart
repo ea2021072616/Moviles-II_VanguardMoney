@@ -102,37 +102,64 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
     return ChangeNotifierProvider<VerTransaccionesViewModel>.value(
       value: _viewModel,
       child: Scaffold(
+        extendBodyBehindAppBar: false,
         appBar: AppBar(
           title: const Text(
             'Mis Transacciones',
             style: TextStyle(
               fontWeight: FontWeight.bold,
+              fontSize: 22,
               color: AppColors.white,
+              letterSpacing: -0.5,
             ),
           ),
           backgroundColor: AppColors.blueClassic,
           elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.blueClassic,
+                  AppColors.blueClassic.withOpacity(0.8),
+                ],
+              ),
+            ),
+          ),
           actions: [
             // Botón para mostrar/ocultar filtros
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _mostrarFiltros = !_mostrarFiltros;
-                });
-              },
-              icon: Icon(
-                _mostrarFiltros ? Icons.filter_list_off : Icons.filter_list,
-                color: AppColors.white,
+            Container(
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                color: _mostrarFiltros 
+                    ? Colors.white.withOpacity(0.2) 
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
               ),
-              tooltip: _mostrarFiltros ? 'Ocultar filtros' : 'Mostrar filtros',
+              child: IconButton(
+                onPressed: () {
+                  setState(() {
+                    _mostrarFiltros = !_mostrarFiltros;
+                  });
+                },
+                icon: Icon(
+                  _mostrarFiltros ? Icons.filter_list_off : Icons.filter_list,
+                  color: AppColors.white,
+                ),
+                tooltip: _mostrarFiltros ? 'Ocultar filtros' : 'Mostrar filtros',
+              ),
             ),
-            IconButton(
-              onPressed: () {
-                final viewModel = context.read<VerTransaccionesViewModel>();
-                _refrescarDatos(viewModel);
-              },
-              icon: const Icon(Icons.refresh, color: AppColors.white),
-              tooltip: 'Actualizar',
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                onPressed: () {
+                  final viewModel = context.read<VerTransaccionesViewModel>();
+                  _refrescarDatos(viewModel);
+                },
+                icon: const Icon(Icons.refresh_rounded, color: AppColors.white),
+                tooltip: 'Actualizar',
+              ),
             ),
           ],
         ),
@@ -140,8 +167,15 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
           builder: (context, viewModel, child) {
             return Column(
               children: [
-                // Panel de filtros expandible
-                if (_mostrarFiltros) _buildPanelFiltros(viewModel),
+                // Panel de filtros expandible con animación
+                AnimatedCrossFade(
+                  firstChild: Container(),
+                  secondChild: _buildPanelFiltros(viewModel),
+                  crossFadeState: _mostrarFiltros 
+                      ? CrossFadeState.showSecond 
+                      : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 300),
+                ),
                 // Lista de transacciones
                 Expanded(child: _buildTransaccionesList(viewModel)),
               ],
@@ -150,11 +184,31 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
         ),
         floatingActionButton: Consumer<VerTransaccionesViewModel>(
           builder: (context, viewModel, child) {
-            return FloatingActionButton(
-              onPressed: () => _refrescarDatos(viewModel),
-              backgroundColor: AppColors.blueClassic,
-              child: const Icon(Icons.add, color: AppColors.white),
-              tooltip: 'Agregar transacción',
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.blueClassic.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton.extended(
+                onPressed: () => _refrescarDatos(viewModel),
+                backgroundColor: AppColors.blueClassic,
+                icon: const Icon(Icons.add_rounded, color: AppColors.white, size: 28),
+                label: const Text(
+                  'Agregar',
+                  style: TextStyle(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                elevation: 0,
+              ),
             );
           },
         ),
@@ -296,109 +350,173 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
   Widget _buildTransaccionCard(TransaccionItem transaccion) {
     final bool esIngreso = transaccion.tipo == 'ingreso';
     final Color colorPrincipal = esIngreso
-        ? const Color(0xFF377CC8)
-        : AppColors.redCoral;
-    final IconData icono = esIngreso ? Icons.add_circle : Icons.remove_circle;
+        ? const Color(0xFF4CAF50)
+        : const Color(0xFFEF5350);
+    final IconData icono = esIngreso ? Icons.trending_up_rounded : Icons.trending_down_rounded;
     
     // Símbolo de moneda fijo
     final String simboloMoneda = '\$';
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 12.0),
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => _navegarADetalle(transaccion),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: colorPrincipal.withOpacity(0.3),
-              width: 1,
-            ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white,
+            esIngreso ? Colors.green.shade50 : Colors.red.shade50,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorPrincipal.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(16.0),
-            leading: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: colorPrincipal.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _navegarADetalle(transaccion),
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: colorPrincipal.withOpacity(0.2),
+                width: 1.5,
               ),
-              child: Icon(icono, color: colorPrincipal, size: 24),
             ),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    transaccion.categoria,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                Text(
-                  '${esIngreso ? '+' : '-'}$simboloMoneda${_formatCurrency(transaccion.monto)}',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: colorPrincipal,
-                  ),
-                ),
-              ],
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                if (transaccion.descripcion.isNotEmpty)
-                  Text(
-                    transaccion.descripcion,
-                    style: TextStyle(color: AppColors.greyDark, fontSize: 14),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today,
-                      size: 14,
-                      color: AppColors.greyDark,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _formatDate(transaccion.fecha),
-                      style: TextStyle(color: AppColors.greyDark, fontSize: 12),
-                    ),
-                    const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      // Icono con gradiente
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: esIngreso
+                                ? [Colors.green.shade400, Colors.green.shade600]
+                                : [Colors.red.shade400, Colors.red.shade600],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: colorPrincipal.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(icono, color: Colors.white, size: 28),
                       ),
-                      decoration: BoxDecoration(
-                        color: colorPrincipal.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        esIngreso ? 'Ingreso' : 'Gasto',
-                        style: TextStyle(
-                          color: colorPrincipal,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(width: 16),
+                      // Categoría y monto
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              transaccion.categoria,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 17,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colorPrincipal.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                esIngreso ? 'Ingreso' : 'Gasto',
+                                style: TextStyle(
+                                  color: colorPrincipal,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      // Monto grande
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '${esIngreso ? '+' : '-'}$simboloMoneda${_formatCurrency(transaccion.monto)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              color: colorPrincipal,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (transaccion.descripcion.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      transaccion.descripcion,
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 14,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  // Fecha con mejor estilo
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 16,
+                          color: Colors.grey[700],
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _formatDate(transaccion.fecha),
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            trailing: Icon(Icons.chevron_right, color: AppColors.greyMedium),
           ),
         ),
       ),

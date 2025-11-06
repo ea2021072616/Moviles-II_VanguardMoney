@@ -45,25 +45,58 @@ class _VerDetalleViewState extends State<VerDetalleView> {
         }
       },
       child: Scaffold(
+        extendBodyBehindAppBar: false,
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
             onPressed: () {
               // Regresar con el estado de modificación
               Navigator.of(context).pop(_transaccionModificada);
             },
           ),
-          title: const Text('Detalle de Transacción'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () => _navegarAEditar(context),
-              tooltip: 'Editar',
+          title: const Text(
+            'Detalle de Transacción',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () => _mostrarDialogoEliminar(context),
-              tooltip: 'Eliminar',
+          ),
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.indigo.shade600,
+                  Colors.purple.shade600,
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            Container(
+              margin: const EdgeInsets.only(right: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.edit_rounded),
+                onPressed: () => _navegarAEditar(context),
+                tooltip: 'Editar',
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.delete_rounded),
+                onPressed: () => _mostrarDialogoEliminar(context),
+                tooltip: 'Eliminar',
+              ),
             ),
           ],
         ),
@@ -142,65 +175,115 @@ class _VerDetalleViewState extends State<VerDetalleView> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: viewModel.colorTipo.withOpacity(0.1),
-        border: Border(
-          bottom: BorderSide(
-            color: viewModel.colorTipo.withOpacity(0.3),
-            width: 2,
-          ),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: viewModel.colorTipo == Colors.green
+              ? [Colors.green.shade400, Colors.green.shade700]
+              : [Colors.red.shade400, Colors.red.shade700],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: viewModel.colorTipo.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         children: [
+          // Icono con efecto
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: viewModel.colorTipo,
+              color: Colors.white.withOpacity(0.25),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            child: Icon(viewModel.iconoTipo, size: 48, color: Colors.white),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                viewModel.iconoTipo,
+                size: 56,
+                color: viewModel.colorTipo,
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             viewModel.tipoFormateado,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: viewModel.colorTipo,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+              letterSpacing: 1,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             '$simboloMoneda${detalle.monto.toStringAsFixed(2)}',
-            style: TextStyle(
-              fontSize: 36,
+            style: const TextStyle(
+              fontSize: 48,
               fontWeight: FontWeight.bold,
-              color: viewModel.colorTipo,
+              color: Colors.white,
+              letterSpacing: -1,
+              shadows: [
+                Shadow(
+                  color: Colors.black26,
+                  offset: Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
             ),
           ),
           // Mostrar número de factura si existe
           if (detalle.tipo == 'gasto' && 
               detalle.invoiceNumber != null && 
               detalle.invoiceNumber!.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: viewModel.colorTipo.withOpacity(0.3),
-                ),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: Text(
-                detalle.invoiceNumber!,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: viewModel.colorTipo,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.receipt_long_rounded,
+                    size: 18,
+                    color: viewModel.colorTipo,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    detalle.invoiceNumber!,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: viewModel.colorTipo,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -208,25 +291,31 @@ class _VerDetalleViewState extends State<VerDetalleView> {
           if (detalle.tipo == 'gasto' && 
               detalle.entryMethod != null && 
               detalle.entryMethod!.toLowerCase() == 'ia') ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.shade300),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.auto_awesome, size: 14, color: Colors.blue),
-                  SizedBox(width: 4),
+                  Icon(Icons.auto_awesome_rounded, size: 16, color: Colors.purple.shade600),
+                  const SizedBox(width: 6),
                   Text(
                     'Registrado con IA',
                     style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.blue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple.shade600,
                     ),
                   ),
                 ],
@@ -241,33 +330,62 @@ class _VerDetalleViewState extends State<VerDetalleView> {
   Widget _buildSeccionInformacion(DetalleTransaccion detalle) {
     final formatoFecha = DateFormat('dd/MM/yyyy HH:mm');
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Información General',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.indigo.shade400, Colors.purple.shade400],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.info_rounded, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Información General',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
             ),
-            const Divider(),
-            const SizedBox(height: 8),
+            const SizedBox(height: 20),
             _buildInfoRow(
-              icon: Icons.category_outlined,
+              icon: Icons.category_rounded,
               label: 'Categoría',
               value: detalle.categoria,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             _buildInfoRow(
-              icon: Icons.calendar_today_outlined,
+              icon: Icons.event_rounded,
               label: 'Fecha',
               value: formatoFecha.format(detalle.fecha),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             _buildInfoRow(
-              icon: Icons.description_outlined,
+              icon: Icons.description_rounded,
               label: 'Descripción',
               value: detalle.descripcion.isNotEmpty
                   ? detalle.descripcion
@@ -280,30 +398,59 @@ class _VerDetalleViewState extends State<VerDetalleView> {
   }
 
   Widget _buildSeccionIngreso(DetalleTransaccion detalle) {
-    return Card(
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(0.1),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Detalles del Ingreso',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.green.shade400, Colors.green.shade600],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.trending_up_rounded, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Detalles del Ingreso',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
             ),
-            const Divider(),
-            const SizedBox(height: 8),
+            const SizedBox(height: 20),
             if (detalle.metodoPago != null && detalle.metodoPago!.isNotEmpty)
               _buildInfoRow(
-                icon: Icons.payment_outlined,
+                icon: Icons.payment_rounded,
                 label: 'Método de Pago',
                 value: detalle.metodoPago!,
               ),
             if (detalle.metodoPago != null && detalle.metodoPago!.isNotEmpty)
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
             if (detalle.origen != null && detalle.origen!.isNotEmpty)
               _buildInfoRow(
-                icon: Icons.source_outlined,
+                icon: Icons.source_rounded,
                 label: 'Origen',
                 value: detalle.origen!,
               ),
@@ -317,37 +464,66 @@ class _VerDetalleViewState extends State<VerDetalleView> {
     return Column(
       children: [
         // Información de Identificación
-        Card(
+        Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.1),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '📋 Identificación de Factura',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.orange.shade400, Colors.red.shade400],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      '📋 Identificación de Factura',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
-                const Divider(),
-                const SizedBox(height: 8),
+                const SizedBox(height: 20),
                 if (detalle.invoiceNumber != null && detalle.invoiceNumber!.isNotEmpty)
                   _buildInfoRow(
-                    icon: Icons.numbers,
+                    icon: Icons.confirmation_number_rounded,
                     label: 'Número de Factura',
                     value: detalle.invoiceNumber!,
                   ),
                 if (detalle.invoiceNumber != null && detalle.invoiceNumber!.isNotEmpty)
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                 if (detalle.taxAmount != null && detalle.taxAmount! > 0)
                   _buildInfoRow(
-                    icon: Icons.receipt_long,
+                    icon: Icons.percent_rounded,
                     label: 'Impuestos',
                     value: '\$${detalle.taxAmount!.toStringAsFixed(2)}',
                   ),
                 if (detalle.taxAmount != null && detalle.taxAmount! > 0)
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                 _buildInfoRow(
-                  icon: Icons.calculate_outlined,
+                  icon: Icons.calculate_rounded,
                   label: 'Total (con impuestos)',
                   value: '\$${detalle.monto.toStringAsFixed(2)}',
                 ),
@@ -358,38 +534,67 @@ class _VerDetalleViewState extends State<VerDetalleView> {
         const SizedBox(height: 16),
         
         // Información del Proveedor
-        Card(
+        Container(
           margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.red.withOpacity(0.1),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '🏢 Proveedor (Emisor)',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.blue.shade400, Colors.indigo.shade400],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.business_rounded, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      '🏢 Proveedor (Emisor)',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
                 ),
-                const Divider(),
-                const SizedBox(height: 8),
+                const SizedBox(height: 20),
                 if (detalle.supplierName != null && detalle.supplierName!.isNotEmpty)
                   _buildInfoRow(
-                    icon: Icons.business,
+                    icon: Icons.store_rounded,
                     label: 'Nombre o Razón Social',
                     value: detalle.supplierName!,
                   ),
                 if (detalle.supplierName != null && detalle.supplierName!.isNotEmpty)
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                 if (detalle.supplierTaxId != null && detalle.supplierTaxId!.isNotEmpty)
                   _buildInfoRow(
-                    icon: Icons.badge_outlined,
+                    icon: Icons.badge_rounded,
                     label: 'NIF / RFC / RUT',
                     value: detalle.supplierTaxId!,
                   ),
                 if (detalle.supplierTaxId != null && detalle.supplierTaxId!.isNotEmpty)
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                 if (detalle.lugarLocal != null && detalle.lugarLocal!.isNotEmpty)
                   _buildInfoRow(
-                    icon: Icons.location_on_outlined,
+                    icon: Icons.location_on_rounded,
                     label: 'Dirección',
                     value: detalle.lugarLocal!,
                   ),
@@ -448,35 +653,60 @@ class _VerDetalleViewState extends State<VerDetalleView> {
     required String label,
     required String value,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+              ],
+            ),
+            child: Icon(icon, size: 20, color: Colors.indigo.shade600),
           ),
-        ),
-      ],
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
