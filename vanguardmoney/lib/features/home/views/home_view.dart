@@ -6,12 +6,14 @@ import '../../../core/constants/app_routes.dart';
 import '../viewmodels/home_viewmodel.dart';
 
 // Provider para el HomeViewModel
-final homeViewModelProvider = ChangeNotifierProvider.autoDispose<HomeViewModel>((ref) {
-  final viewModel = HomeViewModel();
-  // Cargar datos automáticamente
-  viewModel.cargarDatosHome();
-  return viewModel;
-});
+final homeViewModelProvider = ChangeNotifierProvider.autoDispose<HomeViewModel>(
+  (ref) {
+    final viewModel = HomeViewModel();
+    // Cargar datos automáticamente
+    viewModel.cargarDatosHome();
+    return viewModel;
+  },
+);
 
 // VISTA ESPECÍFICA DEL HOME - Dashboard principal
 class HomeView extends ConsumerStatefulWidget {
@@ -81,43 +83,24 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   Widget _buildGreetingCard(BuildContext context, String userName) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-          ),
-        ],
-      ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '¡Hola, $userName!',
+            'Hola, $userName',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             'Bienvenido a VanguardMoney',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.white.withOpacity(0.9),
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
           ),
         ],
       ),
@@ -125,99 +108,73 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   Widget _buildErrorCard(BuildContext context, String error) {
-    return Card(
-      color: Colors.red.shade50,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.red.shade700),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                error,
-                style: TextStyle(color: Colors.red.shade700),
-              ),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline, color: Colors.red.shade700),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(error, style: TextStyle(color: Colors.red.shade700)),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildBalanceCard(BuildContext context, HomeViewModel viewModel) {
     if (viewModel.isLoading) {
-      return Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const Padding(
-          padding: EdgeInsets.all(40),
-          child: Center(child: CircularProgressIndicator()),
-        ),
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: CircularProgressIndicator()),
       );
     }
 
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Balance Total',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Icon(
-                  Icons.account_balance_wallet,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Balance Total',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
             ),
-            const SizedBox(height: 12),
-            Text(
-              'S/ ${_formatCurrency(viewModel.balance)}',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: viewModel.balance >= 0 
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.red,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'S/ ${_formatCurrency(viewModel.balance)}',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: viewModel.balance >= 0 ? Colors.green[700] : Colors.red,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildBalanceItem(
+                  context,
+                  'Ingresos',
+                  '+ S/ ${_formatCurrency(viewModel.totalIngresos)}',
+                  Icons.trending_up,
+                  Colors.green,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildBalanceItem(
-                    context,
-                    'Ingresos',
-                    '+ S/ ${_formatCurrency(viewModel.totalIngresos)}',
-                    Icons.trending_up,
-                    Colors.green,
-                  ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildBalanceItem(
+                  context,
+                  'Egresos',
+                  '- S/ ${_formatCurrency(viewModel.totalGastos)}',
+                  Icons.trending_down,
+                  Colors.red,
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildBalanceItem(
-                    context,
-                    'Egresos',
-                    '- S/ ${_formatCurrency(viewModel.totalGastos)}',
-                    Icons.trending_down,
-                    Colors.red,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -238,117 +195,105 @@ class _HomeViewState extends ConsumerState<HomeView> {
     IconData icon,
     Color color,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          amount,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentTransactions(
+    BuildContext context,
+    HomeViewModel viewModel,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 4),
               Text(
-                label,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w500,
+                'Transacciones Recientes',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
+              ),
+              TextButton(
+                onPressed: () {
+                  context.push(AppRoutes.transactions);
+                },
+                child: const Text('Ver todas'),
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(
-            amount,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+          const SizedBox(height: 8),
+          if (viewModel.isLoading)
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (viewModel.transaccionesRecientes.isEmpty)
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.inbox_outlined,
+                      size: 32,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'No hay transacciones recientes',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ...viewModel.transaccionesRecientes.map((transaccion) {
+              final esIngreso = transaccion.tipo == 'ingreso';
+              final color = esIngreso ? Colors.green : Colors.red;
+              final signo = esIngreso ? '+' : '-';
+              return _buildTransactionItem(
+                context,
+                transaccion.categoria,
+                '$signo S/ ${_formatCurrency(transaccion.monto)}',
+                transaccion.icono,
+                color,
+                viewModel.obtenerTextoRelativoFecha(transaccion.fecha),
+              );
+            }).toList(),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRecentTransactions(BuildContext context, HomeViewModel viewModel) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Transacciones Recientes',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    context.push(AppRoutes.transactions);
-                  },
-                  child: const Text('Ver todas'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            
-            // Mostrar loading
-            if (viewModel.isLoading)
-              const Padding(
-                padding: EdgeInsets.all(20),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            // Mostrar transacciones o mensaje vacío
-            else if (viewModel.transaccionesRecientes.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Center(
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.inbox_outlined,
-                        size: 48,
-                        color: Colors.grey.shade400,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No hay transacciones recientes',
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              // Mostrar las transacciones
-              ...viewModel.transaccionesRecientes.map((transaccion) {
-                final esIngreso = transaccion.tipo == 'ingreso';
-                final color = esIngreso ? Colors.green : Colors.red;
-                final signo = esIngreso ? '+' : '-';
-                
-                return _buildTransactionItem(
-                  context,
-                  transaccion.categoria,
-                  '$signo S/ ${_formatCurrency(transaccion.monto)}',
-                  transaccion.icono,
-                  color,
-                  viewModel.obtenerTextoRelativoFecha(transaccion.fecha),
-                );
-              }).toList(),
-          ],
-        ),
       ),
     );
   }
@@ -362,18 +307,11 @@ class _HomeViewState extends ConsumerState<HomeView> {
     String date,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 12),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
