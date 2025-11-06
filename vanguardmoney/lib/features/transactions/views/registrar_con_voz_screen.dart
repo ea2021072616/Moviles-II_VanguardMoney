@@ -11,7 +11,7 @@ import 'ingreso/register_ingreso_view.dart';
 /// Pantalla para registrar transacciones mediante audio/voz con IA
 class RegistrarConVozScreen extends StatefulWidget {
   final String? idUsuario;
-  
+
   const RegistrarConVozScreen({super.key, this.idUsuario});
 
   @override
@@ -30,7 +30,10 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
     _checkPermissions();
     // Inicializar Gemini al cargar la pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewModel = Provider.of<RegistrarMedianteVozViewModel>(context, listen: false);
+      final viewModel = Provider.of<RegistrarMedianteVozViewModel>(
+        context,
+        listen: false,
+      );
       viewModel.initializeGeminiModel();
     });
   }
@@ -53,8 +56,9 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
 
     try {
       final directory = await getApplicationDocumentsDirectory();
-      final filePath = '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      
+      final filePath =
+          '${directory.path}/recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
       await _audioRecorder.start(
         const RecordConfig(
           encoder: AudioEncoder.aacLc,
@@ -69,7 +73,10 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
         _audioPath = null;
       });
 
-      final viewModel = Provider.of<RegistrarMedianteVozViewModel>(context, listen: false);
+      final viewModel = Provider.of<RegistrarMedianteVozViewModel>(
+        context,
+        listen: false,
+      );
       viewModel.setRecording(true);
 
       if (mounted) {
@@ -92,13 +99,16 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
   Future<void> _stopRecording() async {
     try {
       final path = await _audioRecorder.stop();
-      
+
       setState(() {
         _isRecording = false;
         _audioPath = path;
       });
 
-      final viewModel = Provider.of<RegistrarMedianteVozViewModel>(context, listen: false);
+      final viewModel = Provider.of<RegistrarMedianteVozViewModel>(
+        context,
+        listen: false,
+      );
       viewModel.setRecording(false);
       if (path != null) {
         viewModel.setAudioPath(path);
@@ -133,7 +143,10 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
           _audioPath = result.files.single.path;
         });
 
-        final viewModel = Provider.of<RegistrarMedianteVozViewModel>(context, listen: false);
+        final viewModel = Provider.of<RegistrarMedianteVozViewModel>(
+          context,
+          listen: false,
+        );
         viewModel.setAudioPath(_audioPath);
 
         if (mounted) {
@@ -163,13 +176,16 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
     }
 
     final idUsuario = widget.idUsuario ?? 'usuario_default';
-    final viewModel = Provider.of<RegistrarMedianteVozViewModel>(context, listen: false);
-    
+    final viewModel = Provider.of<RegistrarMedianteVozViewModel>(
+      context,
+      listen: false,
+    );
+
     // Analizar audio
     await viewModel.analizarAudioYExtraerDatos(_audioPath!, idUsuario);
-    
+
     if (!mounted) return;
-    
+
     // Si hubo error, mostrar mensaje
     if (viewModel.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -180,7 +196,7 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
       );
       return;
     }
-    
+
     // Si se extrajeron datos, ir a la vista correspondiente
     if (viewModel.datosExtraidos != null && viewModel.tipoTransaccion != null) {
       if (viewModel.tipoTransaccion == 'egreso') {
@@ -195,7 +211,9 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
           'taxAmount': viewModel.datosExtraidos!['taxAmount'],
           'lugarLocal': viewModel.datosExtraidos!['lugarLocal'],
           'categoria': viewModel.datosExtraidos!['categoria'],
-          'audioPath': _audioPath,
+          // RegisterBillView espera 'scanImagePath' para la ruta del escaneo/archivo;
+          // reutilizamos ese campo para pasar la ruta del audio desde la IA.
+          'scanImagePath': _audioPath,
         };
 
         Navigator.push(
@@ -208,84 +226,33 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
           ),
         );
       } else if (viewModel.tipoTransaccion == 'ingreso') {
-        // Mostrar diálogo porque RegisterIngresoView no acepta datos iniciales aún
-        // Necesitaremos modificar RegisterIngresoView después
-        _mostrarDialogoIngresoNoSoportado(viewModel.datosExtraidos!);
+        // Navegar a la vista de registro de ingreso pasando los datos extraídos
+        final datosParaIngreso = {
+          'monto': viewModel.datosExtraidos!['monto'],
+          'fecha': viewModel.datosExtraidos!['fecha'],
+          'descripcion': viewModel.datosExtraidos!['descripcion'],
+          'categoria': viewModel.datosExtraidos!['categoria'],
+          'metodoPago': viewModel.datosExtraidos!['metodoPago'],
+          'origen': viewModel.datosExtraidos!['origen'],
+        };
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RegisterIngresoView(
+              idUsuario: idUsuario,
+              datosIniciales: datosParaIngreso,
+            ),
+          ),
+        );
       }
     }
   }
 
-  void _mostrarDialogoIngresoNoSoportado(Map<String, dynamic> datos) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.info_outline, color: Colors.blue),
-            SizedBox(width: 8),
-            Text('Ingreso Detectado'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Se detectó un INGRESO con los siguientes datos:',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            _buildInfoRow('💰 Monto', '\$${datos['monto']}'),
-            _buildInfoRow('📝 Descripción', datos['descripcion'] ?? ''),
-            _buildInfoRow('📂 Categoría', datos['categoria'] ?? ''),
-            _buildInfoRow('💳 Método de Pago', datos['metodoPago'] ?? ''),
-            _buildInfoRow('🏢 Origen', datos['origen'] ?? ''),
-            const SizedBox(height: 12),
-            const Text(
-              'Por favor, registra manualmente este ingreso en la sección de Ingresos.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cerrar'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navegar a registro de ingreso manual
-              Navigator.pop(context); // Volver al menú principal
-            },
-            icon: const Icon(Icons.add_circle),
-            label: const Text('Ir a Ingresos'),
-          ),
-        ],
-      ),
-    );
-  }
+  // Nota: el flujo de ingresos ahora navega directamente a RegisterIngresoView
+  // con datosIniciales, por lo que el diálogo antiguo fue removido.
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-          ),
-          Expanded(
-            child: Text(
-              value.isEmpty ? '-' : value,
-              style: const TextStyle(fontSize: 13),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // helper removido: el diálogo de ingreso fue reemplazado por navegación directa.
 
   @override
   void dispose() {
@@ -325,7 +292,7 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: _isRecording 
+                          color: _isRecording
                               ? Colors.red.withOpacity(0.2)
                               : Colors.purple.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(50),
@@ -338,7 +305,9 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        _isRecording ? '🔴 Grabando...' : 'Describe tu transacción',
+                        _isRecording
+                            ? '🔴 Grabando...'
+                            : 'Describe tu transacción',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -348,13 +317,10 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _isRecording 
+                        _isRecording
                             ? 'Menciona si es un gasto o ingreso, el monto y detalles'
                             : 'La IA detectará automáticamente si es ingreso o egreso',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -367,11 +333,16 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                 if (!_isRecording && _audioPath == null) ...[
                   // Botón para grabar
                   ElevatedButton.icon(
-                    onPressed: _hasPermission ? _startRecording : _checkPermissions,
+                    onPressed: _hasPermission
+                        ? _startRecording
+                        : _checkPermissions,
                     icon: const Icon(Icons.mic, size: 28),
                     label: Text(
                       _hasPermission ? 'Grabar Audio' : 'Solicitar Permiso',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purple,
@@ -383,20 +354,23 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Divider con texto
                   Row(
                     children: [
                       Expanded(child: Divider(color: Colors.grey[400])),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('o', style: TextStyle(color: Colors.grey[600])),
+                        child: Text(
+                          'o',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
                       ),
                       Expanded(child: Divider(color: Colors.grey[400])),
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Botón para seleccionar archivo
                   OutlinedButton.icon(
                     onPressed: _pickAudioFile,
@@ -423,7 +397,10 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                     icon: const Icon(Icons.stop, size: 28),
                     label: const Text(
                       'Detener Grabación',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
@@ -435,7 +412,7 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Indicador visual de grabación
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -479,7 +456,11 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 32),
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 32,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -521,13 +502,20 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                                   height: 20,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
                                   ),
                                 )
                               : const Icon(Icons.auto_awesome),
                           label: Text(
-                            viewModel.isLoading ? 'Analizando...' : 'Analizar con IA',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            viewModel.isLoading
+                                ? 'Analizando...'
+                                : 'Analizar con IA',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.purple,
@@ -548,7 +536,10 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                           viewModel.setAudioPath(null);
                         },
                         style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 16,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -575,7 +566,11 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.lightbulb_outline, color: Colors.purple[700], size: 20),
+                          Icon(
+                            Icons.lightbulb_outline,
+                            color: Colors.purple[700],
+                            size: 20,
+                          ),
                           const SizedBox(width: 8),
                           Text(
                             'Consejos para mejores resultados',
@@ -589,10 +584,22 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
                       ),
                       const SizedBox(height: 12),
                       _buildTip('💰', 'Menciona si es un "gasto" o "ingreso"'),
-                      _buildTip('🔢', 'Di el monto claramente: "pagué 500 pesos"'),
-                      _buildTip('📝', 'Describe brevemente: "compra de supermercado"'),
-                      _buildTip('🏪', 'Menciona el lugar: "en Walmart" o "por transferencia"'),
-                      _buildTip('🎯', 'La IA detectará automáticamente el tipo'),
+                      _buildTip(
+                        '🔢',
+                        'Di el monto claramente: "pagué 500 pesos"',
+                      ),
+                      _buildTip(
+                        '📝',
+                        'Describe brevemente: "compra de supermercado"',
+                      ),
+                      _buildTip(
+                        '🏪',
+                        'Menciona el lugar: "en Walmart" o "por transferencia"',
+                      ),
+                      _buildTip(
+                        '🎯',
+                        'La IA detectará automáticamente el tipo',
+                      ),
                     ],
                   ),
                 ),
@@ -615,10 +622,7 @@ class _RegistrarConVozScreenState extends State<RegistrarConVozScreen> {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                color: Colors.purple[700],
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.purple[700], fontSize: 13),
             ),
           ),
         ],

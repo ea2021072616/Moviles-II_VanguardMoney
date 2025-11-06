@@ -18,8 +18,13 @@ final categoriaIngresoViewModelProvider =
 
 class RegisterIngresoView extends ConsumerStatefulWidget {
   final String idUsuario;
-  const RegisterIngresoView({Key? key, required this.idUsuario})
-    : super(key: key);
+  final Map<String, dynamic>? datosIniciales;
+
+  const RegisterIngresoView({
+    Key? key,
+    required this.idUsuario,
+    this.datosIniciales,
+  }) : super(key: key);
 
   @override
   ConsumerState<RegisterIngresoView> createState() =>
@@ -35,6 +40,32 @@ class _RegisterIngresoViewState extends ConsumerState<RegisterIngresoView> {
       ref
           .read(categoriaIngresoViewModelProvider)
           .cargarCategorias(widget.idUsuario, TipoCategoria.ingreso);
+
+      // Si vienen datos iniciales desde la IA, prellenar el formulario
+      if (widget.datosIniciales != null) {
+        final viewModel = ref.read(registrarIngresoViewModelProvider);
+        final datos = widget.datosIniciales!;
+
+        viewModel.montoController.text = datos['monto']?.toString() ?? '';
+        viewModel.descripcionController.text =
+            datos['descripcion']?.toString() ?? '';
+        viewModel.metodoPagoController.text =
+            datos['metodoPago']?.toString() ?? '';
+        viewModel.origenController.text = datos['origen']?.toString() ?? '';
+
+        if (datos['fecha'] != null && datos['fecha'].toString().isNotEmpty) {
+          try {
+            viewModel.setFecha(DateTime.parse(datos['fecha'].toString()));
+          } catch (e) {
+            viewModel.setFecha(DateTime.now());
+          }
+        }
+
+        final categoria = datos['categoria']?.toString();
+        if (categoria != null && categoria.isNotEmpty) {
+          viewModel.setCategoria(categoria);
+        }
+      }
     });
   }
 

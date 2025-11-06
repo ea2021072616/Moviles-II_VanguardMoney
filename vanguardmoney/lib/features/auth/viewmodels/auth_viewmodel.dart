@@ -53,9 +53,13 @@ class AuthViewModel extends AsyncNotifier<AuthState> {
       );
       state = AsyncValue.data(AuthAuthenticated(user));
     } on AuthException catch (e) {
+      // Guardar el estado de error y relanzar para que la UI lo maneje
       state = AsyncValue.data(AuthError(e.message, code: e.code));
+      rethrow;
     } catch (e) {
+      // Mantener registro del error y relanzar para que la UI lo muestre
       state = AsyncValue.data(AuthError('Error inesperado: $e'));
+      rethrow;
     }
   }
 
@@ -77,9 +81,13 @@ class AuthViewModel extends AsyncNotifier<AuthState> {
       );
       state = AsyncValue.data(AuthAuthenticated(user));
     } on AuthException catch (e) {
+      // Guardar el estado de error y relanzar para que la UI lo maneje
       state = AsyncValue.data(AuthError(e.message, code: e.code));
+      rethrow;
     } catch (e) {
+      // Mantener registro del error y relanzar para que la UI lo muestre
       state = AsyncValue.data(AuthError('Error inesperado: $e'));
+      rethrow;
     }
   }
 
@@ -97,10 +105,13 @@ class AuthViewModel extends AsyncNotifier<AuthState> {
         // Re-lanzar para que la UI pueda manejar si es necesario
         rethrow;
       } else {
+        // Guardar el estado de error y relanzar para que la UI lo maneje
         state = AsyncValue.data(AuthError(e.message, code: e.code));
+        rethrow;
       }
     } catch (e) {
       state = AsyncValue.data(AuthError('Error inesperado: $e'));
+      rethrow;
     }
   }
 
