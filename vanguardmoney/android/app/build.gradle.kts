@@ -29,7 +29,8 @@ android {
         applicationId = "com.example.vanguardmoney"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+    // record_android requires at least API 23. Set minSdk to 23 explicitly.
+    minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
