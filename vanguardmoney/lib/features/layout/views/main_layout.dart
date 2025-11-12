@@ -51,18 +51,23 @@ class MainLayout extends ConsumerWidget {
       appBar: AppBar(
         title: Text(currentTab.title),
         centerTitle: true,
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: AppColors.white,
+        foregroundColor: AppColors.blackGrey,
         elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.search_rounded),
             onPressed: () {
               // TODO: Implementar búsqueda
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Búsqueda próximamente'),
+                SnackBar(
+                  content: const Text('Búsqueda próximamente'),
                   behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  margin: const EdgeInsets.all(16),
                 ),
               );
             },
@@ -85,33 +90,42 @@ class MainLayout extends ConsumerWidget {
     );
   }
 
-  // Botón flotante central para Análisis IA - Diseño limpio con Gemini
+  // Botón flotante central para Análisis IA - Diseño premium minimalista
   Widget _buildAICenterButton(
     BuildContext context,
     WidgetRef ref,
     int currentIndex,
   ) {
     final isAISelected = currentIndex == 2;
-    final aiColor = _getTabColor(2); // Color específico para AI
+    final aiColor = _getTabColor(2);
 
     return Container(
       height: 64,
       width: 64,
       decoration: BoxDecoration(
-        color: isAISelected ? aiColor : AppColors.white,
+        gradient: isAISelected
+            ? LinearGradient(
+                colors: [aiColor, aiColor.withOpacity(0.8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : null,
+        color: isAISelected ? null : AppColors.white,
         shape: BoxShape.circle,
         border: Border.all(
-          color: isAISelected ? aiColor : AppColors.greyMedium,
-          width: isAISelected ? 3 : 2,
+          color: isAISelected
+              ? Colors.transparent
+              : AppColors.greyMedium.withOpacity(0.3),
+          width: isAISelected ? 0 : 1.5,
         ),
         boxShadow: [
           BoxShadow(
             color: isAISelected
-                ? aiColor.withOpacity(0.3)
-                : AppColors.blackGrey.withOpacity(0.1),
-            blurRadius: isAISelected ? 12 : 6,
-            offset: const Offset(0, 3),
-            spreadRadius: isAISelected ? 1 : 0,
+                ? aiColor.withOpacity(0.4)
+                : AppColors.blackGrey.withOpacity(0.08),
+            blurRadius: isAISelected ? 16 : 8,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
         ],
       ),
@@ -123,14 +137,14 @@ class MainLayout extends ConsumerWidget {
           },
           borderRadius: BorderRadius.circular(32),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             child: SvgPicture.asset(
               'assets/gemini-color.svg',
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               colorFilter: isAISelected
                   ? const ColorFilter.mode(Colors.white, BlendMode.srcIn)
-                  : null, // Mantener colores originales cuando no está seleccionado
+                  : null,
             ),
           ),
         ),
@@ -138,7 +152,7 @@ class MainLayout extends ConsumerWidget {
     );
   }
 
-  // Barra de navegación personalizada con diseño limpio
+  // Barra de navegación personalizada con diseño premium minimalista
   Widget _buildCustomBottomNavigationBar(
     BuildContext context,
     WidgetRef ref,
@@ -146,14 +160,20 @@ class MainLayout extends ConsumerWidget {
   ) {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
-      notchMargin: 8.0,
+      notchMargin: 10.0,
       elevation: 0,
       color: AppColors.white,
+      surfaceTintColor: Colors.transparent,
       child: Container(
         height: 60,
         decoration: BoxDecoration(
           color: AppColors.white,
-          border: Border(top: BorderSide(color: AppColors.greyLight, width: 1)),
+          border: Border(
+            top: BorderSide(
+              color: AppColors.greyMedium.withOpacity(0.2),
+              width: 0.5,
+            ),
+          ),
         ),
         child: Row(
           children: [
@@ -163,10 +183,10 @@ class MainLayout extends ConsumerWidget {
                 ref,
                 0,
                 Icons.home_outlined,
-                Icons.home,
+                Icons.home_rounded,
                 AppStrings.navHome,
                 currentIndex,
-                _getTabColor(0), // Color específico para Home
+                _getTabColor(0),
               ),
             ),
             Expanded(
@@ -174,24 +194,24 @@ class MainLayout extends ConsumerWidget {
                 context,
                 ref,
                 1,
-                Icons.timeline_outlined,
-                Icons.timeline,
+                Icons.savings_outlined,
+                Icons.savings_rounded,
                 AppStrings.navPlanes,
                 currentIndex,
-                _getTabColor(1), // Color específico para Planes
+                _getTabColor(1),
               ),
             ),
-            const SizedBox(width: 64), // Espacio para el FAB central (Gemini)
+            const SizedBox(width: 64), // Espacio para el FAB central
             Expanded(
               child: _buildNavItem(
                 context,
                 ref,
                 3,
-                Icons.add_circle_outline,
-                Icons.add_circle,
+                Icons.add_circle_outline_rounded,
+                Icons.add_circle_rounded,
                 AppStrings.navTransactions,
                 currentIndex,
-                _getTabColor(3), // Color específico para Transacciones
+                _getTabColor(3),
               ),
             ),
             Expanded(
@@ -199,11 +219,11 @@ class MainLayout extends ConsumerWidget {
                 context,
                 ref,
                 4,
-                Icons.bar_chart_outlined,
-                Icons.bar_chart,
+                Icons.analytics_outlined,
+                Icons.analytics_rounded,
                 AppStrings.navReports,
                 currentIndex,
-                _getTabColor(4), // Color específico para Reportes
+                _getTabColor(4),
               ),
             ),
           ],
@@ -212,7 +232,7 @@ class MainLayout extends ConsumerWidget {
     );
   }
 
-  // Widget individual para cada item de navegación - Diseño limpio con línea superior
+  // Widget individual para cada item de navegación - Diseño iOS minimalista
   Widget _buildNavItem(
     BuildContext context,
     WidgetRef ref,
@@ -221,7 +241,7 @@ class MainLayout extends ConsumerWidget {
     IconData filledIcon,
     String label,
     int currentIndex,
-    Color tabColor, // Color específico para este tab
+    Color tabColor,
   ) {
     final isSelected = currentIndex == index;
 
@@ -231,40 +251,52 @@ class MainLayout extends ConsumerWidget {
         onTap: () {
           ref.read(layoutViewModelProvider.notifier).navigateToIndex(index);
         },
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Línea superior de selección (como en la imagen)
-              Container(
-                height: 3,
-                width: 32,
+              // Indicador superior minimalista
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 2.5,
+                width: isSelected ? 20 : 0,
                 decoration: BoxDecoration(
-                  color: isSelected ? tabColor : Colors.transparent,
+                  color: tabColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
               const SizedBox(height: 6),
-              // Icono
-              Icon(
-                isSelected ? filledIcon : outlinedIcon,
-                color: isSelected ? tabColor : AppColors.greyDark,
-                size: 22,
+
+              // Icono con animación
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  isSelected ? filledIcon : outlinedIcon,
+                  key: ValueKey(isSelected),
+                  color: isSelected ? tabColor : AppColors.greyDark,
+                  size: 24,
+                ),
               ),
-              const SizedBox(height: 2),
-              // Texto
-              Flexible(
+              const SizedBox(height: 3),
+
+              // Texto con animación - AJUSTADO PARA NO OVERFLOW
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  color: isSelected ? tabColor : AppColors.greyDark,
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  letterSpacing: -0.2,
+                  height: 1.0,
+                ),
                 child: Text(
                   label,
-                  style: TextStyle(
-                    color: isSelected ? tabColor : AppColors.greyDark,
-                    fontSize: 10,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.clip,
                 ),
               ),
             ],

@@ -6,13 +6,11 @@ import 'dart:math' as math;
 
 // Provider para el DashboardViewModel
 final dashboardViewModelProvider =
-    ChangeNotifierProvider.autoDispose<DashboardViewModel>(
-  (ref) {
-    final viewModel = DashboardViewModel();
-    viewModel.loadDashboardData();
-    return viewModel;
-  },
-);
+    ChangeNotifierProvider.autoDispose<DashboardViewModel>((ref) {
+      final viewModel = DashboardViewModel();
+      viewModel.loadDashboardData();
+      return viewModel;
+    });
 
 /// Vista principal del Dashboard Financiero
 class DashboardView extends ConsumerStatefulWidget {
@@ -41,42 +39,63 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
         child: viewModel.isLoading
             ? const Center(child: CircularProgressIndicator())
             : viewModel.error != null
-                ? _buildErrorState(context, viewModel.error!)
-                : viewModel.dashboardStats == null
-                    ? _buildEmptyState(context)
-                    : _buildDashboardContent(context, viewModel),
+            ? _buildErrorState(context, viewModel.error!)
+            : viewModel.dashboardStats == null
+            ? _buildEmptyState(context)
+            : _buildDashboardContent(context, viewModel),
       ),
     );
   }
 
   Widget _buildErrorState(BuildContext context, String error) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.error.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 64,
+                color: theme.colorScheme.error,
+              ),
+            ),
+            const SizedBox(height: 24),
             Text(
               'Error al cargar datos',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.5,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               error,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () {
                 ref.read(dashboardViewModelProvider).loadDashboardData();
               },
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh_rounded),
               label: const Text('Reintentar'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 14,
+                ),
+              ),
             ),
           ],
         ),
@@ -85,25 +104,47 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.analytics_outlined, size: 64, color: Colors.grey[400]),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primary.withOpacity(0.1),
+                    theme.colorScheme.primary.withOpacity(0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.analytics_outlined,
+                size: 64,
+                color: theme.colorScheme.primary.withOpacity(0.6),
+              ),
+            ),
+            const SizedBox(height: 24),
             Text(
               'No hay datos disponibles',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.5,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               'Registra transacciones para ver tu dashboard',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
             ),
           ],
         ),
@@ -143,7 +184,18 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
           if (stats.gastosPorCategoria.isNotEmpty) ...[
             _buildSectionTitle(context, 'Gastos por Categoría'),
             const SizedBox(height: 12),
-            _buildCategoryList(context, stats.gastosPorCategoria, stats.monthlyStats.totalGastos),
+            _buildCategoryList(
+              context,
+              stats.gastosPorCategoria,
+              stats.monthlyStats.totalGastos,
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // Mensaje cuando no hay gastos registrados
+          if (stats.gastosPorCategoria.isEmpty &&
+              stats.monthlyStats.totalGastos == 0) ...[
+            _buildNoExpensesMessage(context),
             const SizedBox(height: 24),
           ],
 
@@ -158,27 +210,50 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     );
   }
 
-  Widget _buildMonthSelector(BuildContext context, DashboardViewModel viewModel) {
-    return Card(
-      elevation: 2,
+  Widget _buildMonthSelector(
+    BuildContext context,
+    DashboardViewModel viewModel,
+  ) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             IconButton(
               onPressed: viewModel.previousMonth,
-              icon: const Icon(Icons.chevron_left),
+              icon: const Icon(Icons.chevron_left_rounded, size: 28),
+              style: IconButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.08),
+                foregroundColor: theme.colorScheme.primary,
+              ),
             ),
             Text(
               '${viewModel.getMonthName(viewModel.selectedMonth)} ${viewModel.selectedYear}',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.5,
+              ),
             ),
             IconButton(
               onPressed: viewModel.nextMonth,
-              icon: const Icon(Icons.chevron_right),
+              icon: const Icon(Icons.chevron_right_rounded, size: 28),
+              style: IconButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary.withOpacity(0.08),
+                foregroundColor: theme.colorScheme.primary,
+              ),
             ),
           ],
         ),
@@ -187,20 +262,80 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
   }
 
   Widget _buildSectionTitle(BuildContext context, String title) {
+    final theme = Theme.of(context);
     return Text(
       title,
-      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+      style: theme.textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        color: theme.colorScheme.onSurface,
+        letterSpacing: -0.5,
+      ),
+    );
+  }
+
+  Widget _buildNoExpensesMessage(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary.withOpacity(0.08),
+            theme.colorScheme.primary.withOpacity(0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.primary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.pie_chart_outline_rounded,
+            size: 48,
+            color: theme.colorScheme.primary.withOpacity(0.6),
           ),
+          const SizedBox(height: 16),
+          Text(
+            'Sin gastos registrados',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Registra tus gastos para ver gráficos y estadísticas detalladas',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildMonthlySummary(BuildContext context, MonthlyStats stats) {
-    return Card(
-      elevation: 4,
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.1),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
             // Balance
@@ -209,28 +344,60 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
               children: [
                 Text(
                   'Balance del Mes',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.grey[700],
-                      ),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: -0.3,
+                  ),
                 ),
-                Icon(
-                  stats.isPositive ? Icons.trending_up : Icons.trending_down,
-                  color: stats.isPositive ? Colors.green : Colors.red,
-                  size: 28,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: stats.isPositive
+                        ? theme.colorScheme.tertiary.withOpacity(0.12)
+                        : theme.colorScheme.error.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    stats.isPositive
+                        ? Icons.trending_up_rounded
+                        : Icons.trending_down_rounded,
+                    color: stats.isPositive
+                        ? theme.colorScheme.tertiary
+                        : theme.colorScheme.error,
+                    size: 24,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              'S/ ${_formatCurrency(stats.balance)}',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: stats.isPositive ? Colors.green[700] : Colors.red[700],
-                  ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'S/ ${_formatCurrency(stats.balance)}',
+                style: theme.textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: stats.isPositive
+                      ? theme.colorScheme.tertiary
+                      : theme.colorScheme.error,
+                  letterSpacing: -1,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    theme.colorScheme.onSurface.withOpacity(0.1),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 20),
-            Divider(color: Colors.grey[300]),
-            const SizedBox(height: 16),
 
             // Ingresos y Gastos
             Row(
@@ -240,35 +407,51 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     context,
                     'Ingresos',
                     stats.totalIngresos,
-                    Colors.green,
-                    Icons.arrow_downward,
+                    theme.colorScheme.tertiary,
+                    Icons.arrow_downward_rounded,
                   ),
                 ),
                 Container(
                   width: 1,
                   height: 60,
-                  color: Colors.grey[300],
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        theme.colorScheme.onSurface.withOpacity(0.1),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
                 ),
                 Expanded(
                   child: _buildSummaryItem(
                     context,
                     'Gastos',
                     stats.totalGastos,
-                    Colors.red,
-                    Icons.arrow_upward,
+                    theme.colorScheme.error,
+                    Icons.arrow_upward_rounded,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
 
             // Información adicional
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    theme.colorScheme.primary.withOpacity(0.08),
+                    theme.colorScheme.primary.withOpacity(0.04),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -277,13 +460,13 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     context,
                     '${stats.cantidadTransacciones}',
                     'Transacciones',
-                    Icons.receipt_long,
+                    Icons.receipt_long_rounded,
                   ),
                   _buildInfoChip(
                     context,
                     '${stats.savingsPercentage.toStringAsFixed(1)}%',
                     'Ahorro',
-                    Icons.savings,
+                    Icons.savings_rounded,
                   ),
                 ],
               ),
@@ -301,29 +484,32 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     Color color,
     IconData icon,
   ) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 4),
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 6),
             Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.2,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Text(
           'S/ ${_formatCurrency(amount)}',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: -0.5,
+          ),
         ),
       ],
     );
@@ -335,26 +521,36 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     String label,
     IconData icon,
   ) {
+    final theme = Theme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 18, color: Colors.blue[700]),
-        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 20, color: theme.colorScheme.primary),
+        ),
+        const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               value,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue[900],
-                  ),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.primary,
+                letterSpacing: -0.3,
+              ),
             ),
             Text(
               label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.blue[700],
-                  ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -366,10 +562,21 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     final totalGastos = stats.monthlyStats.totalGastos;
     if (totalGastos <= 0) return const SizedBox.shrink();
 
-    return Card(
-      elevation: 2,
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
             SizedBox(
@@ -385,25 +592,28 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     children: [
                       Text(
                         'Total',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey[600],
-                            ),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         'S/ ${_formatCurrency(totalGastos)}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Wrap(
-              spacing: 12,
-              runSpacing: 8,
+              spacing: 16,
+              runSpacing: 12,
               alignment: WrapAlignment.center,
               children: stats.gastosPorCategoria.take(5).map((cat) {
                 final color = _getCategoryColor(
@@ -419,21 +629,25 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
   }
 
   Widget _buildLegendItem(BuildContext context, String label, Color color) {
+    final theme = Theme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 14,
+          height: 14,
           decoration: BoxDecoration(
             color: color,
-            shape: BoxShape.circle,
+            borderRadius: BorderRadius.circular(4),
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 8),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ],
     );
@@ -444,56 +658,109 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     List<CategoryStats> categories,
     double total,
   ) {
-    return Card(
-      elevation: 2,
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: categories.length,
-        separatorBuilder: (context, index) => Divider(
-          height: 1,
-          color: Colors.grey[300],
+        separatorBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  theme.colorScheme.onSurface.withOpacity(0.08),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
         ),
         itemBuilder: (context, index) {
           final category = categories[index];
           final percentage = category.calculatePercentage(total);
           final color = _getCategoryColor(index);
 
-          return ListTile(
-            leading: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _getCategoryIcon(category.categoryName),
-                color: color,
-                size: 20,
-              ),
-            ),
-            title: Text(
-              category.categoryName,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text('${category.transactionCount} transacciones'),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
               children: [
-                Text(
-                  'S/ ${_formatCurrency(category.amount)}',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        color.withOpacity(0.15),
+                        color.withOpacity(0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    _getCategoryIcon(category.categoryName),
+                    color: color,
+                    size: 24,
+                  ),
                 ),
-                Text(
-                  '${percentage.toStringAsFixed(1)}%',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        category.categoryName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.3,
+                        ),
                       ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${category.transactionCount} ${category.transactionCount == 1 ? 'transacción' : 'transacciones'}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'S/ ${_formatCurrency(category.amount)}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${percentage.toStringAsFixed(1)}%',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -507,94 +774,165 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     BuildContext context,
     List<PlanSummary> plans,
   ) {
-    return Card(
-      elevation: 2,
+    final theme = Theme.of(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: plans.length,
-        separatorBuilder: (context, index) => Divider(
-          height: 1,
-          color: Colors.grey[300],
+        separatorBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  theme.colorScheme.onSurface.withOpacity(0.08),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
         ),
         itemBuilder: (context, index) {
           final plan = plans[index];
           final statusColor = _getPlanStatusColor(plan.status);
 
-          return ExpansionTile(
-            leading: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.2),
-                shape: BoxShape.circle,
+          return Theme(
+            data: theme.copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
               ),
-              child: Icon(
-                _getPlanStatusIcon(plan.status),
-                color: statusColor,
-                size: 20,
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              leading: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      statusColor.withOpacity(0.15),
+                      statusColor.withOpacity(0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  _getPlanStatusIcon(plan.status),
+                  color: statusColor,
+                  size: 24,
+                ),
               ),
-            ),
-            title: Text(
-              plan.planName,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text('${plan.categoriesCount} categorías'),
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    // Barra de progreso
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: plan.usagePercentage / 100,
-                        minHeight: 12,
-                        backgroundColor: Colors.grey[200],
-                        valueColor: AlwaysStoppedAnimation<Color>(statusColor),
+              title: Text(
+                plan.planName,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              subtitle: Text(
+                '${plan.categoriesCount} ${plan.categoriesCount == 1 ? 'categoría' : 'categorías'}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+              children: [
+                // Barra de progreso
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.onSurface.withOpacity(0.06),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: (plan.usagePercentage / 100).clamp(0.0, 1.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [statusColor, statusColor.withOpacity(0.8)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                  ),
+                ),
+                const SizedBox(height: 16),
 
-                    // Información detallada
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildPlanDetail(
-                          context,
-                          'Presupuesto',
-                          'S/ ${_formatCurrency(plan.totalBudget)}',
-                          Colors.blue,
-                        ),
-                        _buildPlanDetail(
-                          context,
-                          'Gastado',
-                          'S/ ${_formatCurrency(plan.totalSpent)}',
-                          statusColor,
-                        ),
-                        _buildPlanDetail(
-                          context,
-                          'Restante',
-                          'S/ ${_formatCurrency(plan.remainingAmount)}',
-                          Colors.green,
-                        ),
-                      ],
+                // Información detallada
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildPlanDetail(
+                      context,
+                      'Presupuesto',
+                      'S/ ${_formatCurrency(plan.totalBudget)}',
+                      theme.colorScheme.primary,
                     ),
-                    const SizedBox(height: 8),
-
-                    // Porcentaje
-                    Text(
-                      'Usado: ${plan.usagePercentage.toStringAsFixed(1)}%',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: statusColor,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    _buildPlanDetail(
+                      context,
+                      'Gastado',
+                      'S/ ${_formatCurrency(plan.totalSpent)}',
+                      statusColor,
+                    ),
+                    _buildPlanDetail(
+                      context,
+                      'Restante',
+                      'S/ ${_formatCurrency(plan.remainingAmount)}',
+                      theme.colorScheme.tertiary,
                     ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+
+                // Porcentaje
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.trending_up_rounded,
+                        size: 16,
+                        color: statusColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Usado: ${plan.usagePercentage.toStringAsFixed(1)}%',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -607,28 +945,33 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
     String value,
     Color color,
   ) {
+    final theme = Theme.of(context);
     return Column(
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.5),
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           value,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: -0.3,
+          ),
         ),
       ],
     );
   }
 
   String _formatCurrency(double amount) {
-    return amount.toStringAsFixed(2).replaceAllMapped(
+    return amount
+        .toStringAsFixed(2)
+        .replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]},',
         );
@@ -636,14 +979,14 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
 
   Color _getCategoryColor(int index) {
     final colors = [
-      Colors.blue[600]!,
-      Colors.red[600]!,
-      Colors.green[600]!,
-      Colors.orange[600]!,
-      Colors.purple[600]!,
-      Colors.teal[600]!,
-      Colors.pink[600]!,
-      Colors.amber[600]!,
+      const Color(0xFF0A4D8C), // Navy blue (primary)
+      const Color(0xFFDC3545), // Sophisticated red (error)
+      const Color(0xFF10A37F), // Emerald green (tertiary)
+      const Color(0xFFFF8C42), // Orange
+      const Color(0xFF9B59B6), // Purple
+      const Color(0xFF16A085), // Teal
+      const Color(0xFFE74C3C), // Coral
+      const Color(0xFF3498DB), // Sky blue
     ];
     return colors[index % colors.length];
   }
@@ -651,21 +994,21 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
   IconData _getCategoryIcon(String categoryName) {
     final name = categoryName.toLowerCase();
     if (name.contains('alimento') || name.contains('comida')) {
-      return Icons.restaurant;
+      return Icons.restaurant_rounded;
     } else if (name.contains('transporte')) {
-      return Icons.directions_car;
+      return Icons.directions_car_rounded;
     } else if (name.contains('salud')) {
-      return Icons.medical_services;
+      return Icons.medical_services_rounded;
     } else if (name.contains('educación') || name.contains('educacion')) {
-      return Icons.school;
+      return Icons.school_rounded;
     } else if (name.contains('entretenimiento')) {
-      return Icons.movie;
+      return Icons.movie_rounded;
     } else if (name.contains('vivienda')) {
-      return Icons.home;
+      return Icons.home_rounded;
     } else if (name.contains('ropa')) {
-      return Icons.checkroom;
+      return Icons.checkroom_rounded;
     }
-    return Icons.category;
+    return Icons.category_rounded;
   }
 
   Color _getPlanStatusColor(PlanStatus status) {
@@ -684,13 +1027,13 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
   IconData _getPlanStatusIcon(PlanStatus status) {
     switch (status) {
       case PlanStatus.healthy:
-        return Icons.check_circle;
+        return Icons.check_circle_rounded;
       case PlanStatus.caution:
-        return Icons.warning_amber;
+        return Icons.warning_amber_rounded;
       case PlanStatus.warning:
-        return Icons.error_outline;
+        return Icons.error_outline_rounded;
       case PlanStatus.exceeded:
-        return Icons.dangerous;
+        return Icons.dangerous_rounded;
     }
   }
 }
@@ -711,14 +1054,14 @@ class PieChartPainter extends CustomPainter {
     double startAngle = -math.pi / 2;
 
     final colors = [
-      Colors.blue[600]!,
-      Colors.red[600]!,
-      Colors.green[600]!,
-      Colors.orange[600]!,
-      Colors.purple[600]!,
-      Colors.teal[600]!,
-      Colors.pink[600]!,
-      Colors.amber[600]!,
+      const Color(0xFF0A4D8C), // Navy blue (primary)
+      const Color(0xFFDC3545), // Sophisticated red (error)
+      const Color(0xFF10A37F), // Emerald green (tertiary)
+      const Color(0xFFFF8C42), // Orange
+      const Color(0xFF9B59B6), // Purple
+      const Color(0xFF16A085), // Teal
+      const Color(0xFFE74C3C), // Coral
+      const Color(0xFF3498DB), // Sky blue
     ];
 
     for (int i = 0; i < categories.length; i++) {

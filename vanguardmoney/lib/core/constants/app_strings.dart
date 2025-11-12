@@ -11,7 +11,7 @@ class AppStrings {
   static const String navHome = 'Inicio';
   static const String navPlanes = 'Planes';
   static const String navAnalysisIA = 'Análisis IA';
-  static const String navTransactions = 'Registro';
+  static const String navTransactions = 'Agregar';
   static const String navReports = 'Reportes';
 
   // ========== AUTENTICACIÓN ==========

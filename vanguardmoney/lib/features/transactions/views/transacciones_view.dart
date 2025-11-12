@@ -13,146 +13,164 @@ class TransaccionesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              // Header
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 24),
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            // Header premium
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.account_balance_wallet,
-                      size: 48,
-                      color: Colors.indigo[600],
-                    ),
-                    const SizedBox(height: 12),
                     Text(
-                      '¿Qué deseas registrar?',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                      'Nueva Transacción',
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Elige una opción para continuar',
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      'Elige cómo deseas registrar',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withOpacity(0.6),
+                      ),
                     ),
                   ],
                 ),
               ),
+            ),
 
-              const SizedBox(height: 20),
+            // Opciones de transacciones
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  const SizedBox(height: 8),
 
-              // Opciones de transacciones
-              Expanded(
-                child: Column(
-                  children: [
-                    // Registrar Ingreso
-                    _buildTransactionCard(
-                      context: context,
-                      title: 'Registrar Ingreso',
-                      subtitle: 'Agregar dinero recibido',
-                      icon: Icons.trending_up,
-                      color: Colors.green,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                RegisterIngresoView(idUsuario: idUsuario),
+                  // Registrar Ingreso
+                  _buildTransactionCard(
+                    context: context,
+                    title: 'Registrar Ingreso',
+                    subtitle: 'Dinero que recibes',
+                    icon: Icons.arrow_upward_rounded,
+                    color: Theme.of(context).colorScheme.secondary,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              RegisterIngresoView(idUsuario: idUsuario),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Registrar Egreso
+                  _buildTransactionCard(
+                    context: context,
+                    title: 'Registrar Egreso',
+                    subtitle: 'Dinero que gastas',
+                    icon: Icons.arrow_downward_rounded,
+                    color: Theme.of(context).colorScheme.error,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              RegisterBillView(idUsuario: idUsuario),
+                        ),
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Registrar con IA
+                  _buildTransactionCard(
+                    context: context,
+                    title: 'Registrar con IA',
+                    subtitle: 'Usa lenguaje natural',
+                    icon: Icons.auto_awesome_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChangeNotifierProvider(
+                            create: (_) => RegistrarMedianteIAViewModel(),
+                            child: RegistrarConIAScreen(idUsuario: idUsuario),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
+                  ),
 
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 32),
 
-                    // Registrar Egreso
-                    _buildTransactionCard(
-                      context: context,
-                      title: 'Registrar Egreso',
-                      subtitle: 'Agregar gasto realizado',
-                      icon: Icons.trending_down,
-                      color: Colors.deepOrange,
-                      onTap: () {
-                        Navigator.push(
+                  // Tip informativo premium
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                RegisterBillView(idUsuario: idUsuario),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Registrar con IA
-                    _buildTransactionCard(
-                      context: context,
-                      title: 'Registrar con IA',
-                      subtitle: 'Describe tu transacción con lenguaje natural',
-                      icon: Icons.auto_awesome,
-                      color: Colors.indigo,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChangeNotifierProvider(
-                              create: (_) => RegistrarMedianteIAViewModel(),
-                              child: RegistrarConIAScreen(idUsuario: idUsuario),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const Spacer(),
-
-                    // Tip informativo
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.blue[200]!),
+                        ).colorScheme.primary.withOpacity(0.1),
+                        width: 1,
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.blue[600],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.lightbulb_outline_rounded,
+                            color: Theme.of(context).colorScheme.primary,
                             size: 20,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Tip: Puedes personalizar las categorías desde el botón ⚙️ en cada formulario',
-                              style: TextStyle(
-                                color: Colors.blue[700],
-                                fontSize: 14,
-                              ),
-                            ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            'Personaliza categorías desde el ícono ⚙️ en cada formulario',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+
+                  const SizedBox(height: 24),
+                ]),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  // Tarjeta de transacción premium
   Widget _buildTransactionCard({
     required BuildContext context,
     required String title,
@@ -162,36 +180,47 @@ class TransaccionesView extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     return Container(
-      width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: color.withOpacity(0.1),
+            blurRadius: 12,
             offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
         ],
       ),
       child: Material(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.white,
+        color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                // Icono
+                // Icono premium con gradiente sutil
                 Container(
                   width: 56,
                   height: 56,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    gradient: LinearGradient(
+                      colors: [
+                        color.withOpacity(0.15),
+                        color.withOpacity(0.08),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(icon, color: color, size: 28),
+                  child: Icon(icon, color: color, size: 26),
                 ),
 
                 const SizedBox(width: 16),
@@ -203,25 +232,29 @@ class TransaccionesView extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withOpacity(0.6),
+                        ),
                       ),
                     ],
                   ),
                 ),
 
-                // Flecha
+                // Flecha minimalista
                 Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.grey[400],
+                  Icons.arrow_forward_ios_rounded,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.3),
                   size: 16,
                 ),
               ],

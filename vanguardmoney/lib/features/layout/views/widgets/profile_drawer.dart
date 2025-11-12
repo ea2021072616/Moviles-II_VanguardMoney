@@ -18,7 +18,8 @@ class ProfileDrawer extends ConsumerWidget {
     final currentUser = ref.watch(currentUserProvider);
 
     return Drawer(
-      backgroundColor: AppColors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      elevation: 0,
       child: Column(
         children: [
           // Header del drawer con información del usuario
@@ -27,81 +28,81 @@ class ProfileDrawer extends ConsumerWidget {
           // Lista expandible con las opciones del menú
           Expanded(
             child: ListView(
-              padding: EdgeInsets.symmetric(
-                horizontal: AppSizes.spaceS,
-                vertical: AppSizes.spaceM,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               children: [
                 // Sección de Perfil
                 _buildSectionTitle(context, 'Mi Cuenta'),
+                const SizedBox(height: 8),
                 _buildMenuItem(
                   context,
                   Icons.account_circle_outlined,
-                  Icons.account_circle,
+                  Icons.account_circle_rounded,
                   AppStrings.editProfile,
                   () => context.push(AppRoutes.editProfile),
                   color: AppColors.blueClassic,
                 ),
                 _buildMenuItem(
                   context,
-                  Icons.attach_money_outlined,
-                  Icons.attach_money,
+                  Icons.account_balance_wallet_outlined,
+                  Icons.account_balance_wallet_rounded,
                   'Configurar Moneda',
                   () => _showCurrencyDialog(context, ref),
                   color: AppColors.greenJade,
                 ),
                 _buildMenuItem(
                   context,
-                  Icons.security_outlined,
-                  Icons.security,
+                  Icons.lock_outline_rounded,
+                  Icons.lock_rounded,
                   'Cambiar Contraseña',
                   () => _showComingSoon(context, 'Cambiar Contraseña'),
-                  color: AppColors.pinkPastel,
+                  color: AppColors.orangePremium,
                 ),
 
-                SizedBox(height: AppSizes.spaceL),
+                const SizedBox(height: 24),
 
                 // Sección de Configuración
                 _buildSectionTitle(context, 'Configuración'),
+                const SizedBox(height: 8),
                 _buildMenuItem(
                   context,
                   Icons.notifications_outlined,
-                  Icons.notifications,
+                  Icons.notifications_rounded,
                   'Notificaciones',
                   () => context.push(AppRoutes.notifications),
-                  color: AppColors.yellowPastel,
+                  color: AppColors.purplePremium,
                 ),
                 _buildMenuItem(
                   context,
                   Icons.palette_outlined,
-                  Icons.palette,
+                  Icons.palette_rounded,
                   'Tema y Apariencia',
                   () => _showComingSoon(context, 'Configuración de Tema'),
-                  color: AppColors.blueLavender,
+                  color: AppColors.pinkPastel,
                 ),
 
-                SizedBox(height: AppSizes.spaceL),
+                const SizedBox(height: 24),
 
                 // Sección de Soporte
                 _buildSectionTitle(context, 'Soporte'),
+                const SizedBox(height: 8),
                 _buildMenuItem(
                   context,
-                  Icons.help_outline,
-                  Icons.help,
+                  Icons.help_outline_rounded,
+                  Icons.help_rounded,
                   'Ayuda y Soporte',
                   () => _showComingSoon(context, 'Ayuda'),
-                  color: AppColors.blueClassic,
+                  color: AppColors.blueBright,
                 ),
                 _buildMenuItem(
                   context,
-                  Icons.info_outline,
-                  Icons.info,
+                  Icons.info_outline_rounded,
+                  Icons.info_rounded,
                   AppStrings.about,
                   () => _showAboutDialog(context),
                   color: AppColors.greenJade,
                 ),
 
-                SizedBox(height: AppSizes.spaceXL),
+                const SizedBox(height: 32),
 
                 // Botón de cerrar sesión
                 _buildLogoutButton(context, ref),
@@ -113,89 +114,111 @@ class ProfileDrawer extends ConsumerWidget {
     );
   }
 
-  // Header del drawer con información del usuario - Optimizado para evitar overflow
+  // Header del drawer PREMIUM - Diseño minimalista
   Widget _buildDrawerHeader(BuildContext context, currentUser) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.blueClassic, AppColors.blueLavender],
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.1),
+            width: 1,
+          ),
         ),
       ),
       child: SafeArea(
         child: Padding(
-          padding: EdgeInsets.all(AppSizes.spaceM),
+          padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar del usuario - Más pequeño
+              // Avatar del usuario - Premium con gradiente
               Container(
-                width: 56,
-                height: 56,
+                width: 70,
+                height: 70,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.white, width: 2),
+                  gradient: LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.tertiary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.blackGrey.withOpacity(0.2),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                child: CircleAvatar(
-                  radius: 26,
-                  backgroundColor: AppColors.white.withOpacity(0.2),
-                  child: currentUser?.photoUrl != null
-                      ? ClipOval(
-                          child: Image.network(
-                            currentUser!.photoUrl!,
-                            width: 52,
-                            height: 52,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.person,
-                                size: 28,
-                                color: AppColors.white,
-                              );
-                            },
+                padding: const EdgeInsets.all(3),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                  padding: const EdgeInsets.all(3),
+                  child: CircleAvatar(
+                    radius: 30,
+                    backgroundColor: AppColors.greyLight,
+                    child: currentUser?.photoUrl != null
+                        ? ClipOval(
+                            child: Image.network(
+                              currentUser!.photoUrl!,
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.person_rounded,
+                                  size: 32,
+                                  color: Theme.of(context).colorScheme.primary,
+                                );
+                              },
+                            ),
+                          )
+                        : Icon(
+                            Icons.person_rounded,
+                            size: 32,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
-                        )
-                      : Icon(Icons.person, size: 28, color: AppColors.white),
+                  ),
                 ),
               ),
-              SizedBox(height: AppSizes.spaceS),
+              const SizedBox(height: 16),
 
-              // Nombre del usuario - Compacto
+              // Nombre del usuario
               Text(
                 currentUser?.displayName ?? 'Usuario',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: AppSizes.fontSizeTitleS,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
 
-              SizedBox(height: AppSizes.spaceXS),
+              const SizedBox(height: 4),
 
-              // Email del usuario - Compacto
+              // Email del usuario
               Text(
                 currentUser?.email ?? '',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.white.withOpacity(0.9),
-                  fontSize: AppSizes.fontSizeS,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withOpacity(0.6),
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
 
-              SizedBox(height: AppSizes.spaceS),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -203,18 +226,14 @@ class ProfileDrawer extends ConsumerWidget {
     );
   }
 
-  // Título de sección
+  // Título de sección PREMIUM
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
-      padding: EdgeInsets.only(
-        left: AppSizes.spaceM,
-        bottom: AppSizes.spaceS,
-        top: AppSizes.spaceS,
-      ),
+      padding: const EdgeInsets.only(left: 12, bottom: 4, top: 4),
       child: Text(
-        title,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: AppColors.greyDark,
+        title.toUpperCase(),
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
           fontWeight: FontWeight.w600,
           fontSize: AppSizes.fontSizeS,
           letterSpacing: 0.5,
@@ -223,7 +242,7 @@ class ProfileDrawer extends ConsumerWidget {
     );
   }
 
-  // Item de menú rediseñado con iconos outlined/filled y colores
+  // Item de menú PREMIUM - Diseño minimalista moderno
   Widget _buildMenuItem(
     BuildContext context,
     IconData outlinedIcon,
@@ -233,82 +252,64 @@ class ProfileDrawer extends ConsumerWidget {
     required Color color,
   }) {
     return Container(
-      margin: EdgeInsets.symmetric(vertical: AppSizes.spaceXS),
+      margin: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppSizes.radiusM),
+        borderRadius: BorderRadius.circular(12),
         color: Colors.transparent,
       ),
       child: ListTile(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusM),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         leading: Container(
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppSizes.radiusS),
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(outlinedIcon, color: color, size: AppSizes.iconM),
+          child: Icon(outlinedIcon, color: color, size: 20),
         ),
         title: Text(
           title,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: AppColors.blackGrey,
-            fontWeight: FontWeight.w500,
-            fontSize: AppSizes.fontSizeL,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
         ),
         trailing: Icon(
-          Icons.chevron_right,
-          color: AppColors.greyDark,
-          size: AppSizes.iconS,
+          Icons.chevron_right_rounded,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3),
+          size: 20,
         ),
         onTap: onTap,
         dense: false,
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: AppSizes.spaceM,
-          vertical: AppSizes.spaceXS,
-        ),
       ),
     );
   }
 
-  // Botón especial para logout
+  // Botón especial para logout PREMIUM
   Widget _buildLogoutButton(BuildContext context, WidgetRef ref) {
     return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: AppSizes.spaceM,
-        vertical: AppSizes.spaceS,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ElevatedButton.icon(
         onPressed: () => _showLogoutDialog(context, ref),
-        icon: Icon(Icons.logout, color: AppColors.white, size: AppSizes.iconS),
+        icon: const Icon(Icons.logout_rounded, size: 20),
         label: Text(
           AppStrings.logout,
-          style: TextStyle(
-            color: AppColors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: AppSizes.fontSizeM,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.redCoral,
-          foregroundColor: AppColors.white,
-          padding: EdgeInsets.symmetric(
-            horizontal: AppSizes.spaceL,
-            vertical: AppSizes.spaceM,
-          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            borderRadius: BorderRadius.circular(14),
           ),
-          elevation: AppSizes.elevationMedium,
+          elevation: 0,
         ),
       ),
     );
-  }
+  } // Dialogo "Próximamente" mejorado
 
-  // Dialogo "Próximamente" mejorado
   void _showComingSoon(BuildContext context, String feature) {
     showDialog(
       context: context,

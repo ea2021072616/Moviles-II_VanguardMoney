@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../models/financial_plan_model.dart';
-import '../../../../core/theme/app_colors.dart';
 
 class CategoryBudgetCard extends StatefulWidget {
   final CategoryBudget categoryBudget;
@@ -35,20 +34,28 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
           color: widget.categoryBudget.isOverBudget
-              ? AppColors.redCoral.withOpacity(0.3)
-              : AppColors.greyLight,
-          width: 1,
+              ? theme.colorScheme.error.withOpacity(0.3)
+              : theme.colorScheme.onSurface.withOpacity(0.08),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -60,21 +67,20 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                   child: Row(
                     children: [
                       Container(
-                        width: 12,
-                        height: 12,
+                        width: 14,
+                        height: 14,
                         decoration: BoxDecoration(
                           color: _getCategoryColor(),
-                          shape: BoxShape.circle,
+                          borderRadius: BorderRadius.circular(4),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           widget.categoryBudget.categoryName,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
-                            color: AppColors.blackGrey,
+                            letterSpacing: -0.3,
                           ),
                         ),
                       ),
@@ -92,17 +98,22 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                       });
                     },
                     icon: Icon(
-                      _isEditing ? Icons.check : Icons.edit,
-                      size: 20,
+                      _isEditing ? Icons.check_rounded : Icons.edit_rounded,
+                      size: 22,
                       color: _isEditing
-                          ? AppColors.greenJade
-                          : AppColors.greyMedium,
+                          ? theme.colorScheme.tertiary
+                          : theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
+                    style: IconButton.styleFrom(
+                      backgroundColor: _isEditing
+                          ? theme.colorScheme.tertiary.withOpacity(0.1)
+                          : theme.colorScheme.onSurface.withOpacity(0.05),
                     ),
                   ),
               ],
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             // Información de presupuesto y gasto
             Row(
@@ -113,17 +124,16 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                     children: [
                       Text(
                         'Gastado',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.greyMedium,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       if (_isEditing)
                         SizedBox(
                           width: 120,
-                          height: 40,
+                          height: 44,
                           child: TextField(
                             controller: _controller,
                             keyboardType: const TextInputType.numberWithOptions(
@@ -137,35 +147,40 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                             decoration: InputDecoration(
                               prefixText: 'S/ ',
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: AppColors.greyMedium,
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.primary.withOpacity(
+                                    0.3,
+                                  ),
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(
-                                  color: AppColors.blueClassic,
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: theme.colorScheme.primary,
+                                  width: 2,
                                 ),
                               ),
                               contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
+                                horizontal: 14,
+                                vertical: 10,
                               ),
                               isDense: true,
                             ),
-                            style: const TextStyle(fontSize: 14),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         )
                       else
                         Text(
                           'S/ ${widget.categoryBudget.spentAmount.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
                             color: widget.categoryBudget.isOverBudget
-                                ? AppColors.redCoral
-                                : AppColors.blackGrey,
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.onSurface,
+                            letterSpacing: -0.3,
                           ),
                         ),
                     ],
@@ -178,19 +193,17 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                     children: [
                       Text(
                         'Presupuesto',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.greyMedium,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.5),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(
                         'S/ ${widget.categoryBudget.budgetAmount.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.blackGrey,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
                         ),
                       ),
                     ],
@@ -198,19 +211,26 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                 ),
 
                 Container(
-                  width: 45,
-                  height: 45,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
-                    color: _getProgressColor().withOpacity(0.1),
-                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        _getProgressColor().withOpacity(0.15),
+                        _getProgressColor().withOpacity(0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   child: Center(
                     child: Text(
                       '${widget.categoryBudget.usagePercentage.toInt()}%',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
                         color: _getProgressColor(),
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
@@ -218,7 +238,7 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
               ],
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             // Barra de progreso
             Column(
@@ -229,68 +249,88 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                   children: [
                     Text(
                       'Progreso',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.greyMedium,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.5),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     Text(
                       widget.categoryBudget.isOverBudget
-                          ? 'Sobre presupuesto: S/ ${(widget.categoryBudget.spentAmount - widget.categoryBudget.budgetAmount).toStringAsFixed(2)}'
+                          ? 'Sobre: S/ ${(widget.categoryBudget.spentAmount - widget.categoryBudget.budgetAmount).toStringAsFixed(2)}'
                           : 'Restante: S/ ${widget.categoryBudget.remainingAmount.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         color: widget.categoryBudget.isOverBudget
-                            ? AppColors.redCoral
-                            : AppColors.greenJade,
-                        fontWeight: FontWeight.w500,
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.tertiary,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                LinearProgressIndicator(
-                  value: (widget.categoryBudget.usagePercentage / 100).clamp(
-                    0.0,
-                    1.0,
+                const SizedBox(height: 8),
+                Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurface.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  backgroundColor: AppColors.greyLight,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    _getProgressColor(),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: (widget.categoryBudget.usagePercentage / 100)
+                        .clamp(0.0, 1.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            _getProgressColor(),
+                            _getProgressColor().withOpacity(0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
-                  minHeight: 6,
                 ),
               ],
             ),
 
             // Mensaje de advertencia si está sobre presupuesto
             if (widget.categoryBudget.isOverBudget) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+                  horizontal: 14,
+                  vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.redCoral.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.colorScheme.error.withOpacity(0.1),
+                      theme.colorScheme.error.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: theme.colorScheme.error.withOpacity(0.2),
+                    width: 1,
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.warning,
-                      size: 16,
-                      color: AppColors.redCoral,
+                    Icon(
+                      Icons.warning_rounded,
+                      size: 18,
+                      color: theme.colorScheme.error,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '¡Has superado el presupuesto de esta categoría!',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.redCoral,
-                          fontWeight: FontWeight.w500,
+                        '¡Has superado el presupuesto!',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -308,22 +348,23 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
     // Generar color basado en el nombre de la categoría para consistencia
     final hash = widget.categoryBudget.categoryName.hashCode;
     final colors = [
-      AppColors.blueClassic,
-      AppColors.greenJade,
-      AppColors.pinkPastel,
-      AppColors.yellowPastel,
-      AppColors.redCoral,
+      const Color(0xFF0A4D8C), // Navy blue (primary)
+      const Color(0xFF10A37F), // Emerald green (tertiary)
+      const Color(0xFFDC3545), // Sophisticated red (error)
+      const Color(0xFFFF8C42), // Orange
+      const Color(0xFF9B59B6), // Purple
     ];
     return colors[hash.abs() % colors.length];
   }
 
   Color _getProgressColor() {
+    final theme = Theme.of(context);
     if (widget.categoryBudget.isOverBudget) {
-      return AppColors.redCoral;
+      return theme.colorScheme.error;
     } else if (widget.categoryBudget.usagePercentage > 80) {
-      return AppColors.yellowPastel;
+      return const Color(0xFFFF8C42); // Orange for warning
     } else {
-      return AppColors.greenJade;
+      return theme.colorScheme.tertiary;
     }
   }
 

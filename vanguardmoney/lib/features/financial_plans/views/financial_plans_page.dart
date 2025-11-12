@@ -48,15 +48,29 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
+    final theme = Theme.of(context);
     return AppBar(
-      title: const Text('Planes Financieros'),
-      backgroundColor: AppColors.blueClassic,
-      foregroundColor: AppColors.white,
+      title: Text(
+        'Planes Financieros',
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.5,
+          color: theme.colorScheme.onPrimary,
+        ),
+      ),
+      backgroundColor: theme.colorScheme.primary,
+      foregroundColor: theme.colorScheme.onPrimary,
       elevation: 0,
       centerTitle: true,
       actions: [
         PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, color: AppColors.white),
+          icon: Icon(
+            Icons.more_vert_rounded,
+            color: theme.colorScheme.onPrimary,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           onSelected: (value) {
             switch (value) {
               case 'toggle_view':
@@ -75,25 +89,40 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
               child: Row(
                 children: [
                   Icon(
-                    _showCurrentPlan ? Icons.list : Icons.calendar_today,
-                    color: AppColors.blackGrey,
+                    _showCurrentPlan
+                        ? Icons.list_rounded
+                        : Icons.calendar_today_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 22,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Text(
                     _showCurrentPlan
                         ? 'Ver todos los planes'
                         : 'Ver plan actual',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
             ),
-            const PopupMenuItem(
+            PopupMenuItem(
               value: 'categories',
               child: Row(
                 children: [
-                  Icon(Icons.category, color: AppColors.blackGrey),
-                  SizedBox(width: 8),
-                  Text('Gestionar Categorías'),
+                  Icon(
+                    Icons.category_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Gestionar Categorías',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -187,17 +216,27 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
   }
 
   Widget _buildPlanSummaryCard(BuildContext context, FinancialPlanModel plan) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    final theme = Theme.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withOpacity(0.15),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
             colors: [
-              AppColors.blueClassic,
-              AppColors.blueClassic.withOpacity(0.8),
+              theme.colorScheme.primary,
+              theme.colorScheme.primary.withOpacity(0.85),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -209,36 +248,39 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  plan.planName,
-                  style: const TextStyle(
-                    color: AppColors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    plan.planName,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 12),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                    horizontal: 14,
+                    vertical: 7,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.white.withOpacity(0.2),
+                    color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
                     '${plan.monthName} ${plan.year}',
-                    style: const TextStyle(
-                      color: AppColors.white,
-                      fontSize: 12,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white,
                       fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
                     ),
                   ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
             // Progreso general
             Row(
@@ -247,20 +289,20 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Gasto Actual',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 14,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.85),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         'S/ ${plan.totalSpent.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          color: AppColors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
                         ),
                       ),
                     ],
@@ -268,19 +310,23 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
                 ),
 
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: 70,
+                  height: 70,
                   decoration: BoxDecoration(
-                    color: AppColors.white.withOpacity(0.2),
+                    color: Colors.white.withOpacity(0.15),
                     shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
+                    ),
                   ),
                   child: Center(
                     child: Text(
                       '${plan.totalUsagePercentage.toInt()}%',
-                      style: const TextStyle(
-                        color: AppColors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
@@ -288,24 +334,44 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
               ],
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
 
             Text(
               'Límite: S/ ${plan.totalBudget.toStringAsFixed(2)}',
-              style: TextStyle(
-                color: AppColors.white.withOpacity(0.9),
-                fontSize: 12,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.white.withOpacity(0.85),
+                fontWeight: FontWeight.w500,
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
-            // Barra de progreso
-            LinearProgressIndicator(
-              value: plan.totalUsagePercentage / 100,
-              backgroundColor: AppColors.white.withOpacity(0.3),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                plan.isOverBudget ? AppColors.redCoral : AppColors.greenJade,
+            // Barra de progreso premium
+            Container(
+              height: 8,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: (plan.totalUsagePercentage / 100).clamp(0.0, 1.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: plan.isOverBudget
+                          ? [
+                              theme.colorScheme.error,
+                              theme.colorScheme.error.withOpacity(0.8),
+                            ]
+                          : [
+                              theme.colorScheme.tertiary,
+                              theme.colorScheme.tertiary.withOpacity(0.8),
+                            ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
           ],
@@ -321,26 +387,42 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
     required Color color,
     required VoidCallback onPressed,
   }) {
-    return SizedBox(
+    final theme = Theme.of(context);
+    return Container(
       width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [color, color.withOpacity(0.85)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: ElevatedButton.icon(
         onPressed: onPressed,
-        icon: Icon(icon, color: AppColors.white),
+        icon: Icon(icon, color: Colors.white, size: 22),
         label: Text(
           title,
-          style: const TextStyle(
-            color: AppColors.white,
-            fontSize: 16,
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: Colors.white,
             fontWeight: FontWeight.w600,
+            letterSpacing: -0.3,
           ),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: color,
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          elevation: 2,
         ),
       ),
     );
