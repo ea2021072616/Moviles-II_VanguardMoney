@@ -66,6 +66,11 @@ class _RegisterIngresoViewState extends ConsumerState<RegisterIngresoView> {
           viewModel.setCategoria(categoria);
         }
       }
+      else {
+        // Registro manual: establecer fecha por defecto al día de hoy
+        final viewModel = ref.read(registrarIngresoViewModelProvider);
+        viewModel.setFecha(DateTime.now());
+      }
     });
   }
 
@@ -121,20 +126,38 @@ class _RegisterIngresoViewState extends ConsumerState<RegisterIngresoView> {
                   const SizedBox(height: 16),
                   GestureDetector(
                     onTap: () async {
+                      // Seleccionar fecha
                       final pickedDate = await showDatePicker(
                         context: context,
-                        initialDate: DateTime.now(),
+                        initialDate: viewModel.fecha ?? DateTime.now(),
                         firstDate: DateTime(2000),
                         lastDate: DateTime(2100),
                       );
                       if (pickedDate != null) {
-                        viewModel.setFecha(pickedDate);
+                        // Seleccionar hora inmediatamente después
+                        final initialTime = viewModel.fecha != null
+                            ? TimeOfDay.fromDateTime(viewModel.fecha!)
+                            : TimeOfDay.fromDateTime(DateTime.now());
+                        final pickedTime = await showTimePicker(
+                          context: context,
+                          initialTime: initialTime,
+                        );
+
+                        final combined = DateTime(
+                          pickedDate.year,
+                          pickedDate.month,
+                          pickedDate.day,
+                          pickedTime?.hour ?? initialTime.hour,
+                          pickedTime?.minute ?? initialTime.minute,
+                        );
+
+                        viewModel.setFecha(combined);
                       }
                     },
                     child: AbsorbPointer(
                       child: TextFormField(
                         decoration: InputDecoration(
-                          labelText: 'Fecha',
+                          labelText: 'Fecha y hora',
                           prefixIcon: const Icon(Icons.calendar_today),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -142,7 +165,7 @@ class _RegisterIngresoViewState extends ConsumerState<RegisterIngresoView> {
                         ),
                         controller: TextEditingController(
                           text: viewModel.fecha != null
-                              ? "${viewModel.fecha!.day}/${viewModel.fecha!.month}/${viewModel.fecha!.year}"
+                              ? "${viewModel.fecha!.day.toString().padLeft(2, '0')}/${viewModel.fecha!.month.toString().padLeft(2, '0')}/${viewModel.fecha!.year} ${viewModel.fecha!.hour.toString().padLeft(2, '0')}:${viewModel.fecha!.minute.toString().padLeft(2, '0')}"
                               : '',
                         ),
                         validator: (_) => validarFecha(viewModel.fecha),

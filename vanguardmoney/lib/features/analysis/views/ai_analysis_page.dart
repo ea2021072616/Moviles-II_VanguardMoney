@@ -228,15 +228,45 @@ class AiAnalysisPage extends ConsumerWidget {
           children: [
             ElevatedButton.icon(
               onPressed: () async {
+                // Re-ejecutar el análisis manualmente desde el bottom sheet
                 final analyzer = PlanAnalyzer();
                 final user = FirebaseAuth.instance.currentUser!;
-                final runId = await analyzer.saveAnalysisRun(user.uid, result);
-                if (runId != null) {
-                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Análisis guardado')));
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const Center(child: CircularProgressIndicator()),
+                );
+                try {
+                  final newResult = await analyzer.analyzeUserOverview(user.uid);
+                  if (context.mounted) Navigator.of(context).pop(); // cerrar dialog
+
+                  // Reemplazar el bottom sheet con el nuevo resultado
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (!context.mounted) return;
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (ctx) => Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: _buildAnalysisBottomSheet(context, newResult),
+                        ),
+                      );
+                    });
+                  }
+                } catch (e) {
+                  if (context.mounted) Navigator.of(context).pop();
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al ejecutar análisis: $e')));
                 }
               },
-              icon: const Icon(Icons.save),
-              label: const Text('Guardar análisis'),
+              icon: const Icon(Icons.analytics),
+              label: const Text('Hacer Análisis'),
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
             ),
 
             ElevatedButton.icon(

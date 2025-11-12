@@ -63,6 +63,33 @@ class FinancialAnalysisViewModel extends StateNotifier<FinancialAnalysisState> {
     try {
       final history = await _service.getAnalysisHistory(userId);
       state = state.copyWith(history: history);
+
+      // Si no hay un análisis cargado actualmente para el período seleccionado,
+      // intentar cargar uno desde el historial; si no existe, ejecutar análisis automáticamente.
+      FinancialAnalysisModel? existing;
+      for (final a in history) {
+        if (a.period.type == state.selectedPeriod.type &&
+            a.period.startDate == state.selectedPeriod.startDate &&
+            a.period.endDate == state.selectedPeriod.endDate) {
+          existing = a;
+          break;
+        }
+      }
+
+      if (existing != null) {
+        // Cargar análisis existente en el estado
+        state = state.copyWith(currentAnalysis: existing);
+      } else {
+        // No hay análisis guardado para el período actual: ejecutar análisis automáticamente
+        // Ejecutar en un microtask para evitar reentrancias en el constructor
+        Future.microtask(() async {
+          try {
+            await runAnalysis();
+          } catch (_) {
+            // Silenciar errores aquí; runAnalysis maneja sus propios errores
+          }
+        });
+      }
     } catch (e) {
       print('Error loading history: $e');
     }
@@ -79,6 +106,14 @@ class FinancialAnalysisViewModel extends StateNotifier<FinancialAnalysisState> {
       );
 
       state = state.copyWith(currentAnalysis: analysis, isLoading: false);
+
+      // Guardar automáticamente después de ejecutar el análisis
+      try {
+        await saveCurrentAnalysis();
+      } catch (e) {
+        // Si falla el guardado automático, sólo registrar el error pero no bloquear
+        print('Error guardando análisis automáticamente: $e');
+      }
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -110,10 +145,31 @@ class FinancialAnalysisViewModel extends StateNotifier<FinancialAnalysisState> {
 
   /// Cambiar período de análisis
   void changePeriod(AnalysisPeriod period) {
-    state = state.copyWith(
-      selectedPeriod: period,
-      clearAnalysis: true, // Limpiar análisis actual al cambiar período
-    );
+    // Al cambiar el período, intentar cargar un análisis guardado para ese período
+    FinancialAnalysisModel? existing;
+    for (final a in state.history) {
+      if (a.period.type == period.type &&
+          a.period.startDate == period.startDate &&
+          a.period.endDate == period.endDate) {
+        existing = a;
+        break;
+      }
+    }
+
+    if (existing != null) {
+      // Cargar análisis guardado y establecer período
+      state = state.copyWith(selectedPeriod: period, clearError: true);
+      loadAnalysis(existing);
+    } else {
+      // No hay análisis guardado para este periodo: limpiar análisis actual pero no ejecutar automáticamente
+      state = state.copyWith(selectedPeriod: period, clearAnalysis: true, clearError: true);
+      // Ejecutar análisis automáticamente cuando no existe uno guardado para el período seleccionado
+      Future.microtask(() async {
+        try {
+          await runAnalysis();
+        } catch (_) {}
+      });
+    }
   }
 
   /// Establecer período mensual

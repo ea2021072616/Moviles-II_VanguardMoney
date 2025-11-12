@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../viewmodels/register_bill_viewmodel.dart';
+import '../../viewmodels/register_egreso_viewmodel.dart';
 import '../../viewmodels/categoria_viewmodel.dart';
 import '../../models/categoria_model.dart';
 import '../../services/validaciones.dart';
@@ -42,7 +42,7 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
           .cargarCategorias(widget.idUsuario, TipoCategoria.egreso);
       
       // Si hay datos iniciales de la IA, prellenar los campos
-      if (widget.datosIniciales != null) {
+    if (widget.datosIniciales != null) {
         final viewModel = ref.read(registerBillViewModelProvider);
         final datos = widget.datosIniciales!;
         
@@ -75,6 +75,11 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
         if (categoria != null && categoria.isNotEmpty) {
           viewModel.setCategoria(categoria);
         }
+      }
+      else {
+        // Registro manual: establecer fecha de la factura por defecto al día de hoy
+        final viewModel = ref.read(registerBillViewModelProvider);
+        viewModel.setInvoiceDate(DateTime.now());
       }
     });
   }
@@ -165,7 +170,7 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                   
                   // SECCIÓN: IDENTIFICACIÓN
                   const Text(
-                    '📋 Identificación',
+                    ' Identificación',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepOrange),
                   ),
                   const SizedBox(height: 12),
@@ -180,12 +185,13 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    validator: (value) => value == null || value.isEmpty ? 'Campo requerido' : null,
+                    // El número de factura ahora es opcional
                   ),
                   const SizedBox(height: 16),
                   
                   GestureDetector(
                     onTap: () async {
+                      // Seleccionar fecha
                       final pickedDate = await showDatePicker(
                         context: context,
                         initialDate: viewModel.invoiceDate ?? DateTime.now(),
@@ -193,7 +199,24 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                         lastDate: DateTime(2100),
                       );
                       if (pickedDate != null) {
-                        viewModel.setInvoiceDate(pickedDate);
+                        // Seleccionar hora también
+                        final initialTime = viewModel.invoiceDate != null
+                            ? TimeOfDay.fromDateTime(viewModel.invoiceDate!)
+                            : TimeOfDay.fromDateTime(DateTime.now());
+                        final pickedTime = await showTimePicker(
+                          context: context,
+                          initialTime: initialTime,
+                        );
+
+                        final combined = DateTime(
+                          pickedDate.year,
+                          pickedDate.month,
+                          pickedDate.day,
+                          pickedTime?.hour ?? initialTime.hour,
+                          pickedTime?.minute ?? initialTime.minute,
+                        );
+
+                        viewModel.setInvoiceDate(combined);
                       }
                     },
                     child: AbsorbPointer(
@@ -207,7 +230,7 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                         ),
                         controller: TextEditingController(
                           text: viewModel.invoiceDate != null
-                              ? '${viewModel.invoiceDate!.day}/${viewModel.invoiceDate!.month}/${viewModel.invoiceDate!.year}'
+                              ? '${viewModel.invoiceDate!.day.toString().padLeft(2, '0')}/${viewModel.invoiceDate!.month.toString().padLeft(2, '0')}/${viewModel.invoiceDate!.year} ${viewModel.invoiceDate!.hour.toString().padLeft(2, '0')}:${viewModel.invoiceDate!.minute.toString().padLeft(2, '0')}'
                               : '',
                         ),
                         validator: (_) => viewModel.invoiceDate == null ? 'Selecciona una fecha' : null,
@@ -247,7 +270,7 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                   
                   // SECCIÓN: PROVEEDOR
                   const Text(
-                    '🏢 Proveedor (Emisor)',
+                    ' Proveedor ',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepOrange),
                   ),
                   const SizedBox(height: 12),
@@ -255,7 +278,7 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                   TextFormField(
                     controller: viewModel.supplierNameController,
                     decoration: InputDecoration(
-                      labelText: 'Nombre o Razón Social',
+                      labelText: 'Nombre De Local o Empresa',
                       hintText: 'Soluciones Digitales S.L.',
                       prefixIcon: const Icon(Icons.business),
                       border: OutlineInputBorder(
@@ -281,7 +304,7 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                   
                   // SECCIÓN: CONTENIDO
                   const Text(
-                    '📝 Contenido Básico',
+                    ' Contenido Básico',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepOrange),
                   ),
                   const SizedBox(height: 12),
@@ -384,7 +407,7 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         textStyle: const TextStyle(fontSize: 18),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.zero,
                         ),
                       ),
                       onPressed: () async {

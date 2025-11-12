@@ -17,9 +17,7 @@ String? validarFecha(DateTime? value) {
 }
 
 String? validarDescripcion(String? value) {
-  if (value == null || value.trim().isEmpty) {
-    return 'La descripción es obligatoria';
-  }
+  // Descripción ahora es opcional
   return null;
 }
 
@@ -31,29 +29,21 @@ String? validarCategoria(String? value) {
 }
 
 String? validarMetodoPago(String? value) {
-  if (value == null || value.trim().isEmpty) {
-    return 'El método de pago es obligatorio';
-  }
+  // Método de pago ahora es opcional
   return null;
 }
 
 String? validarOrigen(String? value) {
-  if (value == null || value.trim().isEmpty) {
-    return 'El origen es obligatorio';
-  }
+  // Origen ahora es opcional (no es campo obligatorio según la nueva regla)
   return null;
 }
 
 String? validarProveedor(String? value) {
-  if (value == null || value.trim().isEmpty) {
-    return 'El proveedor es obligatorio';
-  }
+  // Proveedor ahora es opcional
   return null;
 }
 
 String? validarLugarLocal(String? value) {
-  if (value == null || value.trim().isEmpty) {
-    return 'El lugar/local es obligatorio';
-  }
+  // Lugar/Local ahora es opcional
   return null;
 }

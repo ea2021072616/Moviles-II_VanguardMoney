@@ -61,22 +61,14 @@ class _FinancialAnalysisViewState extends ConsumerState<FinancialAnalysisView>
           ),
         ],
       ),
-      body: _userId.isEmpty
-          ? _buildEmptyState('Inicia sesión para ver tu análisis financiero')
-          : RefreshIndicator(
-              onRefresh: () => viewModel.runAnalysis(),
-              child: CustomScrollView(
+    body: _userId.isEmpty
+      ? _buildEmptyState('Inicia sesión para ver tu análisis financiero')
+      : CustomScrollView(
                 slivers: [
                   // Selector de período
                   SliverToBoxAdapter(
                     child: PeriodSelector(
                       userId: _userId,
-                      onPeriodChanged: () {
-                        // Auto-ejecutar análisis al cambiar período
-                        Future.delayed(const Duration(milliseconds: 300), () {
-                          viewModel.runAnalysis();
-                        });
-                      },
                     ),
                   ),
 
@@ -95,42 +87,8 @@ class _FinancialAnalysisViewState extends ConsumerState<FinancialAnalysisView>
                     _buildAnalysisContent(state.currentAnalysis!),
                 ],
               ),
-            ),
-      floatingActionButton: state.currentAnalysis != null && !state.isLoading
-          ? Padding(
-              padding: const EdgeInsets.only(
-                bottom: 16,
-              ), // Separación del borde
-              child: FloatingActionButton.extended(
-                onPressed: state.isSaving
-                    ? null
-                    : () => _saveAnalysis(viewModel, state),
-                icon: state.isSaving
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.bookmark_add_outlined, size: 22),
-                label: Text(
-                  state.isSaving ? 'Guardando...' : 'Guardar Análisis',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
-                ),
-                backgroundColor: state.isSaving
-                    ? AppColors.greyDark
-                    : AppColors.blueClassic,
-                foregroundColor: Colors.white,
-                elevation: 6,
-                highlightElevation: 10,
-              ),
-            )
-          : null,
+      // Ya no usamos un FAB para guardar: el análisis se guarda automáticamente.
+      floatingActionButton: null,
     );
   }
 
@@ -301,6 +259,39 @@ class _FinancialAnalysisViewState extends ConsumerState<FinancialAnalysisView>
   Widget _buildAnalysisContent(FinancialAnalysisModel analysis) {
     return SliverList(
       delegate: SliverChildListDelegate([
+        // Botón para ejecutar nuevo análisis manualmente (rectangular)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Builder(builder: (context) {
+            final viewModel = ref.read(
+              financialAnalysisViewModelProvider(_userId).notifier,
+            );
+            final isLoading = ref.watch(financialAnalysisViewModelProvider(_userId)).isLoading;
+            return SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: isLoading ? null : () async {
+                  await viewModel.runAnalysis();
+                },
+                icon: isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.0,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.analytics),
+                label: const Text('Hacer Análisis'),
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            );
+          }),
+        ),
         // Resumen financiero
         SummaryCards(summary: analysis.summary),
 
@@ -436,21 +427,7 @@ class _FinancialAnalysisViewState extends ConsumerState<FinancialAnalysisView>
     return '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
-  void _saveAnalysis(
-    FinancialAnalysisViewModel viewModel,
-    FinancialAnalysisState state,
-  ) async {
-    await viewModel.saveCurrentAnalysis();
-
-    if (mounted && state.errorMessage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Análisis guardado exitosamente'),
-          backgroundColor: AppColors.greenJade,
-        ),
-      );
-    }
-  }
+  // Nota: el guardado ahora es automático después de ejecutar el análisis.
 
   void _showHistorySheet(BuildContext context) {
     final history = ref.read(analysisHistoryProvider(_userId));

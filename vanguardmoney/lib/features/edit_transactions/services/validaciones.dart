@@ -35,54 +35,26 @@ class ValidacionesTransacciones {
 
   /// Valida que el método de pago no esté vacío
   static String? validarMetodoPago(String? valor) {
-    if (valor == null || valor.isEmpty) {
-      return 'El método de pago es requerido';
-    }
-
-    if (valor.trim().isEmpty) {
-      return 'El método de pago no puede estar vacío';
-    }
-
-    return null; // Válido
+    // Método de pago ahora es opcional según la nueva regla de campos obligatorios
+    return null;
   }
 
   /// Valida que el origen no esté vacío
   static String? validarOrigen(String? valor) {
-    if (valor == null || valor.isEmpty) {
-      return 'El origen es requerido';
-    }
-
-    if (valor.trim().isEmpty) {
-      return 'El origen no puede estar vacío';
-    }
-
-    return null; // Válido
+    // Origen ahora es opcional según la nueva regla de campos obligatorios
+    return null;
   }
 
   /// Valida que el proveedor no esté vacío
   static String? validarProveedor(String? valor) {
-    if (valor == null || valor.isEmpty) {
-      return 'El proveedor es requerido';
-    }
-
-    if (valor.trim().isEmpty) {
-      return 'El proveedor no puede estar vacío';
-    }
-
-    return null; // Válido
+    // Proveedor ahora es opcional
+    return null;
   }
 
   /// Valida que el lugar no esté vacío
   static String? validarLugar(String? valor) {
-    if (valor == null || valor.isEmpty) {
-      return 'El lugar es requerido';
-    }
-
-    if (valor.trim().isEmpty) {
-      return 'El lugar no puede estar vacío';
-    }
-
-    return null; // Válido
+    // Lugar/Local ahora es opcional
+    return null;
   }
 
   /// Valida que la descripción no exceda el límite de caracteres

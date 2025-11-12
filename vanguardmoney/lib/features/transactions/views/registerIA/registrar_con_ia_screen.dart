@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../viewmodels/registrar_IA_viewmodel.dart';
 import '../../viewmodels/registrar_voz_viewmodel.dart';
-import '../egreso/register_bill_view.dart';
+import '../egreso/register_egreso_view.dart';
 import 'registrar_con_voz_screen.dart';
 
 /// Pantalla para registrar transacciones escaneando imágenes con IA
