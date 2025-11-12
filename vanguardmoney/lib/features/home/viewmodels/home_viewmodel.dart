@@ -96,16 +96,18 @@ class HomeViewModel extends ChangeNotifier {
         try {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
           Ingreso ingreso = Ingreso.fromMap(data);
-          
-          transacciones.add(TransaccionResumen(
-            id: doc.id,
-            categoria: ingreso.categoria,
-            fecha: ingreso.fecha,
-            monto: ingreso.monto,
-            tipo: 'ingreso',
-            descripcion: ingreso.descripcion,
-            icono: _obtenerIconoPorCategoria(ingreso.categoria, 'ingreso'),
-          ));
+          // Solo añadir ingresos cuya fecha sea el día de hoy
+          if (_esMismaFechaHoy(ingreso.fecha)) {
+            transacciones.add(TransaccionResumen(
+              id: doc.id,
+              categoria: ingreso.categoria,
+              fecha: ingreso.fecha,
+              monto: ingreso.monto,
+              tipo: 'ingreso',
+              descripcion: ingreso.descripcion,
+              icono: _obtenerIconoPorCategoria(ingreso.categoria, 'ingreso'),
+            ));
+          }
         } catch (e) {
           print('Error al procesar ingreso ${doc.id}: $e');
         }
@@ -126,16 +128,18 @@ class HomeViewModel extends ChangeNotifier {
         try {
           Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
           Factura factura = Factura.fromMap(data);
-          
-          transacciones.add(TransaccionResumen(
-            id: doc.id,
-            categoria: factura.categoria,
-            fecha: factura.invoiceDate,
-            monto: factura.totalAmount,
-            tipo: 'gasto',
-            descripcion: factura.description,
-            icono: _obtenerIconoPorCategoria(factura.categoria, 'gasto'),
-          ));
+          // Solo añadir gastos cuya fecha sea el día de hoy
+          if (_esMismaFechaHoy(factura.invoiceDate)) {
+            transacciones.add(TransaccionResumen(
+              id: doc.id,
+              categoria: factura.categoria,
+              fecha: factura.invoiceDate,
+              monto: factura.totalAmount,
+              tipo: 'gasto',
+              descripcion: factura.description,
+              icono: _obtenerIconoPorCategoria(factura.categoria, 'gasto'),
+            ));
+          }
         } catch (e) {
           print('Error al procesar gasto ${doc.id}: $e');
         }
@@ -143,6 +147,11 @@ class HomeViewModel extends ChangeNotifier {
     } catch (e) {
       print('Error al cargar gastos: $e');
     }
+  }
+
+  bool _esMismaFechaHoy(DateTime fecha) {
+    final ahora = DateTime.now();
+    return fecha.year == ahora.year && fecha.month == ahora.month && fecha.day == ahora.day;
   }
 
   IconData _obtenerIconoPorCategoria(String categoria, String tipo) {

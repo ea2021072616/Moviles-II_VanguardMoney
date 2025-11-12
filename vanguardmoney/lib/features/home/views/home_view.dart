@@ -200,7 +200,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Balance Total',
+                  'Balance Total Diario',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: Theme.of(
                       context,
