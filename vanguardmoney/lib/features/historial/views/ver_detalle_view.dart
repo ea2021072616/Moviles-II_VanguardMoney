@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../viewmodels/ver_detalle_viewmodel.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../edit_transactions/viewmodels/edit_transactions_viwmodel.dart';
 import '../../edit_transactions/views/edit_transaction_view.dart';
 
@@ -48,31 +50,19 @@ class _VerDetalleViewState extends State<VerDetalleView> {
         extendBodyBehindAppBar: false,
         appBar: AppBar(
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: Theme.of(context).appBarTheme.iconTheme?.color ?? Theme.of(context).colorScheme.onSurface),
             onPressed: () {
               // Regresar con el estado de modificación
               Navigator.of(context).pop(_transaccionModificada);
             },
           ),
-          title: const Text(
+          title: Text(
             'Detalle de Transacción',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
+            style: Theme.of(context).appBarTheme.titleTextStyle ?? const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
           ),
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.indigo.shade600,
-                  Colors.purple.shade600,
-                ],
-              ),
-            ),
-          ),
+          // AppBar en blanco para mayor neutralidad
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? AppColors.white,
+          elevation: 0,
           actions: [
             Container(
               margin: const EdgeInsets.only(right: 4),
@@ -81,7 +71,7 @@ class _VerDetalleViewState extends State<VerDetalleView> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
-                icon: const Icon(Icons.edit_rounded),
+                icon: Icon(Icons.edit_rounded, color: Theme.of(context).appBarTheme.iconTheme?.color ?? Theme.of(context).colorScheme.onSurface),
                 onPressed: () => _navegarAEditar(context),
                 tooltip: 'Editar',
               ),
@@ -93,7 +83,7 @@ class _VerDetalleViewState extends State<VerDetalleView> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
-                icon: const Icon(Icons.delete_rounded),
+                icon: Icon(Icons.delete_rounded, color: Theme.of(context).appBarTheme.iconTheme?.color ?? Theme.of(context).colorScheme.onSurface),
                 onPressed: () => _mostrarDialogoEliminar(context),
                 tooltip: 'Eliminar',
               ),
@@ -177,13 +167,7 @@ class _VerDetalleViewState extends State<VerDetalleView> {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: viewModel.colorTipo == Colors.green
-              ? [Colors.green.shade400, Colors.green.shade700]
-              : [Colors.red.shade400, Colors.red.shade700],
-        ),
+        gradient: widget.tipo == 'ingreso' ? Theme.of(context).incomeGradient : Theme.of(context).expenseGradient,
         boxShadow: [
           BoxShadow(
             color: viewModel.colorTipo.withOpacity(0.3),
@@ -333,7 +317,7 @@ class _VerDetalleViewState extends State<VerDetalleView> {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(

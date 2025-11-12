@@ -41,11 +41,13 @@ class _EditTransactionViewState extends State<EditTransactionView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(esIngreso ? 'Editar Ingreso' : 'Editar Gasto'),
-        backgroundColor: esIngreso ? Colors.green : AppColors.redCoral,
+        title: Text(esIngreso ? 'Editar Ingreso' : 'Editar Gasto', style: Theme.of(context).appBarTheme.titleTextStyle),
+        // AppBar en blanco
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? AppColors.white,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.save),
+            icon: Icon(Icons.save, color: Theme.of(context).appBarTheme.iconTheme?.color ?? Theme.of(context).colorScheme.onSurface),
             onPressed: _guardarCambios,
             tooltip: 'Guardar cambios',
           ),
@@ -54,13 +56,13 @@ class _EditTransactionViewState extends State<EditTransactionView> {
       body: Consumer<EditTransactionViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Cargando datos...'),
+                  CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary)),
+                  const SizedBox(height: 16),
+                  Text('Cargando datos...', style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),
             );
@@ -71,13 +73,13 @@ class _EditTransactionViewState extends State<EditTransactionView> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error.withOpacity(0.8)),
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
                       viewModel.error!,
-                      style: TextStyle(color: Colors.red[700]),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.error),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -90,6 +92,7 @@ class _EditTransactionViewState extends State<EditTransactionView> {
                       );
                     },
                     child: const Text('Reintentar'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
                   ),
                 ],
               ),
@@ -174,18 +177,18 @@ class _EditTransactionViewState extends State<EditTransactionView> {
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Colors.red[50],
+                            color: Theme.of(context).colorScheme.error.withOpacity(0.05),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.red[300]!),
+                            border: Border.all(color: Theme.of(context).colorScheme.error.withOpacity(0.3)),
                           ),
                           child: Row(
                             children: [
-                              Icon(Icons.error_outline, color: Colors.red[700]),
+                              Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
                                   viewModel.error!,
-                                  style: TextStyle(color: Colors.red[700]),
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.error),
                                 ),
                               ),
                             ],
@@ -200,28 +203,22 @@ class _EditTransactionViewState extends State<EditTransactionView> {
                       child: ElevatedButton.icon(
                         onPressed: viewModel.isSaving ? null : _guardarCambios,
                         icon: viewModel.isSaving
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
+                                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.onPrimary),
                                 ),
                               )
-                            : const Icon(Icons.save),
+                            : Icon(Icons.save, color: Theme.of(context).colorScheme.onPrimary),
                         label: Text(
-                          viewModel.isSaving
-                              ? 'Guardando...'
-                              : 'Guardar Cambios',
-                          style: const TextStyle(fontSize: 16),
+                          viewModel.isSaving ? 'Guardando...' : 'Guardar Cambios',
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Theme.of(context).colorScheme.onPrimary, fontSize: 16),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: esIngreso
-                              ? Colors.green
-                              : AppColors.redCoral,
-                          foregroundColor: Colors.white,
+                          backgroundColor: esIngreso ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.error,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -239,32 +236,21 @@ class _EditTransactionViewState extends State<EditTransactionView> {
   }
 
   Widget _buildTipoIndicador(bool esIngreso) {
+    final color = esIngreso ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.error;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: (esIngreso ? Colors.green : AppColors.redCoral).withOpacity(0.1),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: (esIngreso ? Colors.green : AppColors.redCoral).withOpacity(
-            0.3,
-          ),
-        ),
+        border: Border.all(color: color.withOpacity(0.22)),
       ),
       child: Row(
         children: [
-          Icon(
-            esIngreso ? Icons.arrow_upward : Icons.arrow_downward,
-            color: esIngreso ? Colors.green : AppColors.redCoral,
-            size: 32,
-          ),
+          Icon(esIngreso ? Icons.arrow_upward : Icons.arrow_downward, color: color, size: 32),
           const SizedBox(width: 12),
           Text(
             'Editando ${esIngreso ? 'Ingreso' : 'Gasto'}',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: esIngreso ? Colors.green : AppColors.redCoral,
-            ),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: color, fontWeight: FontWeight.bold, fontSize: 18),
           ),
         ],
       ),
@@ -281,7 +267,7 @@ class _EditTransactionViewState extends State<EditTransactionView> {
         prefixIcon: const Icon(Icons.attach_money),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? AppColors.greyLight,
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -304,7 +290,7 @@ class _EditTransactionViewState extends State<EditTransactionView> {
         prefixIcon: const Icon(Icons.category),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? AppColors.greyLight,
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
@@ -324,7 +310,7 @@ class _EditTransactionViewState extends State<EditTransactionView> {
         prefixIcon: const Icon(Icons.description),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: Theme.of(context).inputDecorationTheme.fillColor ?? AppColors.greyLight,
         alignLabelWithHint: true,
       ),
     );

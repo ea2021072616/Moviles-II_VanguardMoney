@@ -4,6 +4,7 @@ import '../viewmodels/Ver_transacciones_viewmodel.dart';
 import '../viewmodels/ver_detalle_viewmodel.dart';
 import '../services/filtros.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import 'ver_detalle_view.dart';
 
 class VerTransaccionesView extends StatefulWidget {
@@ -81,16 +82,16 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
       // Mostrar confirmación de que se actualizó
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                Icon(Icons.refresh, color: Colors.white, size: 20),
-                SizedBox(width: 12),
-                Text('Lista actualizada'),
+                Icon(Icons.refresh, color: Theme.of(context).colorScheme.onPrimary, size: 20),
+                const SizedBox(width: 12),
+                Text('Lista actualizada', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary)),
               ],
             ),
-            backgroundColor: Colors.blue,
-            duration: Duration(seconds: 2),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -104,29 +105,14 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
       child: Scaffold(
         extendBodyBehindAppBar: false,
         appBar: AppBar(
-          title: const Text(
+          // Usar estilo del theme para el título
+          title: Text(
             'Mis Transacciones',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 22,
-              color: AppColors.white,
-              letterSpacing: -0.5,
-            ),
+            style: Theme.of(context).appBarTheme.titleTextStyle,
           ),
-          backgroundColor: AppColors.blueClassic,
+          // Barra superior en blanco (tema)
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? AppColors.white,
           elevation: 0,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.blueClassic,
-                  AppColors.blueClassic.withOpacity(0.8),
-                ],
-              ),
-            ),
-          ),
           actions: [
             // Botón para mostrar/ocultar filtros
             Container(
@@ -145,7 +131,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                 },
                 icon: Icon(
                   _mostrarFiltros ? Icons.filter_list_off : Icons.filter_list,
-                  color: AppColors.white,
+                  color: Theme.of(context).appBarTheme.iconTheme?.color ?? Theme.of(context).colorScheme.onSurface,
                 ),
                 tooltip: _mostrarFiltros ? 'Ocultar filtros' : 'Mostrar filtros',
               ),
@@ -157,7 +143,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                   final viewModel = context.read<VerTransaccionesViewModel>();
                   _refrescarDatos(viewModel);
                 },
-                icon: const Icon(Icons.refresh_rounded, color: AppColors.white),
+                icon: Icon(Icons.refresh_rounded, color: Theme.of(context).appBarTheme.iconTheme?.color ?? Theme.of(context).colorScheme.onSurface),
                 tooltip: 'Actualizar',
               ),
             ),
@@ -189,17 +175,17 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
 
   Widget _buildTransaccionesList(VerTransaccionesViewModel viewModel) {
     if (viewModel.isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.blueClassic),
+              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'Cargando transacciones...',
-              style: TextStyle(fontSize: 16, color: AppColors.greyDark),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.greyDark),
             ),
           ],
         ),
@@ -320,11 +306,9 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
 
   Widget _buildTransaccionCard(TransaccionItem transaccion) {
     final bool esIngreso = transaccion.tipo == 'ingreso';
-    final Color colorPrincipal = esIngreso
-        ? const Color(0xFF4CAF50)
-        : const Color(0xFFEF5350);
+    final Color colorPrincipal = esIngreso ? AppColors.greenJade : AppColors.redCoral;
     final IconData icono = esIngreso ? Icons.trending_up_rounded : Icons.trending_down_rounded;
-    
+
     // Símbolo de moneda fijo
     final String simboloMoneda = '\$';
 
@@ -336,15 +320,15 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white,
-            esIngreso ? Colors.green.shade50 : Colors.red.shade50,
+            AppColors.white,
+            AppColors.getTransactionBackground(transaccion.tipo),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: colorPrincipal.withOpacity(0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: colorPrincipal.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -368,25 +352,21 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                 children: [
                   Row(
                     children: [
-                      // Icono con gradiente
+                      // Icono con gradiente (usando gradientes del theme)
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: esIngreso
-                                ? [Colors.green.shade400, Colors.green.shade600]
-                                : [Colors.red.shade400, Colors.red.shade600],
-                          ),
+                          gradient: esIngreso ? Theme.of(context).incomeGradient : Theme.of(context).expenseGradient,
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: colorPrincipal.withOpacity(0.3),
+                              color: colorPrincipal.withOpacity(0.18),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                        child: Icon(icono, color: Colors.white, size: 28),
+                        child: Icon(icono, color: AppColors.white, size: 28),
                       ),
                       const SizedBox(width: 16),
                       // Categoría y monto
@@ -396,10 +376,9 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                           children: [
                             Text(
                               transaccion.categoria,
-                              style: const TextStyle(
+                              style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle(fontSize: 17, fontWeight: FontWeight.bold)).copyWith(
                                 fontWeight: FontWeight.bold,
-                                fontSize: 17,
-                                color: Colors.black87,
+                                color: AppColors.blackGrey,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -415,7 +394,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                               ),
                               child: Text(
                                 esIngreso ? 'Ingreso' : 'Gasto',
-                                style: TextStyle(
+                                style: (Theme.of(context).textTheme.labelSmall ?? const TextStyle()).copyWith(
                                   color: colorPrincipal,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -433,9 +412,9 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
                         children: [
                           Text(
                             '${esIngreso ? '+' : '-'}$simboloMoneda${_formatCurrency(transaccion.monto)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                            style: (Theme.of(context).textTheme.titleLarge ?? const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)).copyWith(
                               fontSize: 20,
+                              fontWeight: FontWeight.bold,
                               color: colorPrincipal,
                               letterSpacing: -0.5,
                             ),
