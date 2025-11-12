@@ -138,6 +138,11 @@ class ValidacionesTransacciones {
     required String proveedor,
     required String lugar,
     String? descripcion,
+    String? invoiceNumber,
+    String? supplierTaxId,
+    String? taxAmount,
+    DateTime? invoiceDate,
+    String? entryMethod,
   }) {
     // Validar monto
     final errorMonto = validarMonto(monto);
@@ -161,6 +166,18 @@ class ValidacionesTransacciones {
       if (errorDescripcion != null) return errorDescripcion;
     }
 
+    // Validaciones adicionales para factura
+    if (taxAmount != null && taxAmount.isNotEmpty) {
+      final errorTax = validarCampoNumerico(taxAmount, 'Impuesto', min: 0);
+      if (errorTax != null) return errorTax;
+    }
+
+    if (supplierTaxId != null && supplierTaxId.isNotEmpty) {
+      if (supplierTaxId.length > 50) return 'El NIF/RUC del proveedor es demasiado largo';
+    }
+
+    // invoiceDate y invoiceNumber son opcionales; si se proveen, no requieren validación estricta aquí
+
     return null; // Todo válido
   }
 
@@ -174,6 +191,11 @@ class ValidacionesTransacciones {
     TextEditingController? origenController,
     TextEditingController? proveedorController,
     TextEditingController? lugarController,
+    TextEditingController? invoiceNumberController,
+    TextEditingController? supplierTaxIdController,
+    TextEditingController? taxAmountController,
+    DateTime? invoiceDate,
+    TextEditingController? entryMethodController,
   }) {
     if (tipo == 'ingreso') {
       return validarFormularioIngreso(
@@ -190,6 +212,11 @@ class ValidacionesTransacciones {
         proveedor: proveedorController?.text ?? '',
         lugar: lugarController?.text ?? '',
         descripcion: descripcionController.text,
+        invoiceNumber: invoiceNumberController?.text,
+        supplierTaxId: supplierTaxIdController?.text,
+        taxAmount: taxAmountController?.text,
+        invoiceDate: invoiceDate,
+        entryMethod: entryMethodController?.text,
       );
     }
 

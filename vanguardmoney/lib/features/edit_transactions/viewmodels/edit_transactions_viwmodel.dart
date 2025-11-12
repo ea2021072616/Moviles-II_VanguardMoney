@@ -27,6 +27,14 @@ class EditTransactionViewModel extends ChangeNotifier {
   // Campos específicos para gastos
   final TextEditingController proveedorController = TextEditingController();
   final TextEditingController lugarController = TextEditingController();
+  // Campos adicionales para factura/gasto
+  final TextEditingController invoiceNumberController = TextEditingController();
+  DateTime _invoiceDate = DateTime.now();
+  DateTime get invoiceDate => _invoiceDate;
+  final TextEditingController supplierTaxIdController = TextEditingController();
+  final TextEditingController taxAmountController = TextEditingController();
+  final TextEditingController scanImagePathController = TextEditingController();
+  final TextEditingController entryMethodController = TextEditingController();
 
   DateTime _fechaSeleccionada = DateTime.now();
   DateTime get fechaSeleccionada => _fechaSeleccionada;
@@ -45,6 +53,12 @@ class EditTransactionViewModel extends ChangeNotifier {
     origenController.dispose();
     proveedorController.dispose();
     lugarController.dispose();
+    // Disponer nuevos controllers
+    invoiceNumberController.dispose();
+    supplierTaxIdController.dispose();
+    taxAmountController.dispose();
+    scanImagePathController.dispose();
+    entryMethodController.dispose();
     super.dispose();
   }
 
@@ -124,6 +138,13 @@ class EditTransactionViewModel extends ChangeNotifier {
       categoriaController.text = factura.categoria;
       proveedorController.text = factura.supplierName;
       lugarController.text = factura.lugarLocal;
+      // Campos adicionales de factura
+      invoiceNumberController.text = factura.invoiceNumber;
+      _invoiceDate = factura.invoiceDate;
+      supplierTaxIdController.text = factura.supplierTaxId;
+      taxAmountController.text = factura.taxAmount.toString();
+      scanImagePathController.text = factura.scanImagePath ?? '';
+      entryMethodController.text = factura.entryMethod;
       _idUsuario = factura.idUsuario;
     } catch (e) {
       throw Exception('Error al cargar gasto: $e');
@@ -133,6 +154,12 @@ class EditTransactionViewModel extends ChangeNotifier {
   /// Actualiza la fecha seleccionada
   void actualizarFecha(DateTime nuevaFecha) {
     _fechaSeleccionada = nuevaFecha;
+    notifyListeners();
+  }
+
+  /// Actualiza la fecha de la factura (invoice date)
+  void actualizarInvoiceDate(DateTime nuevaFecha) {
+    _invoiceDate = nuevaFecha;
     notifyListeners();
   }
 
@@ -152,6 +179,11 @@ class EditTransactionViewModel extends ChangeNotifier {
       origenController: origenController,
       proveedorController: proveedorController,
       lugarController: lugarController,
+      invoiceNumberController: invoiceNumberController,
+      supplierTaxIdController: supplierTaxIdController,
+      taxAmountController: taxAmountController,
+      invoiceDate: _invoiceDate,
+      entryMethodController: entryMethodController,
     );
   }
 
@@ -220,18 +252,28 @@ class EditTransactionViewModel extends ChangeNotifier {
     // Crear factura actualizada manteniendo los campos originales que no se editan
     final gastoActualizado = Factura(
       idUsuario: _idUsuario!,
-      invoiceNumber: _facturaOriginal?.invoiceNumber ?? '', // Mantener original
-      invoiceDate: _facturaOriginal?.invoiceDate ?? DateTime.now(), // Mantener original
-      totalAmount: monto, // ✅ Actualizado
-      supplierName: proveedorController.text, // ✅ Actualizado
-      supplierTaxId: _facturaOriginal?.supplierTaxId ?? '', // Mantener original
-      description: descripcionController.text, // ✅ Actualizado
-      taxAmount: _facturaOriginal?.taxAmount ?? 0.0, // Mantener original
-      lugarLocal: lugarController.text, // ✅ Actualizado
-      categoria: categoriaController.text, // ✅ Actualizado
-      scanImagePath: _facturaOriginal?.scanImagePath, // Mantener original
-      entryMethod: 'Editado', // ✅ Marcar como editado
-      createdAt: _facturaOriginal?.createdAt, // Mantener original
+    invoiceNumber: invoiceNumberController.text.isNotEmpty
+      ? invoiceNumberController.text
+      : (_facturaOriginal?.invoiceNumber ?? ''),
+  invoiceDate: _invoiceDate,
+    totalAmount: monto, // actualizado
+    supplierName: proveedorController.text, // actualizado
+    supplierTaxId: supplierTaxIdController.text.isNotEmpty
+      ? supplierTaxIdController.text
+      : (_facturaOriginal?.supplierTaxId ?? ''),
+    description: descripcionController.text, // actualizado
+    taxAmount: (taxAmountController.text.isNotEmpty)
+      ? double.tryParse(taxAmountController.text) ?? (_facturaOriginal?.taxAmount ?? 0.0)
+      : (_facturaOriginal?.taxAmount ?? 0.0),
+    lugarLocal: lugarController.text, // actualizado
+    categoria: categoriaController.text, // actualizado
+    scanImagePath: scanImagePathController.text.isNotEmpty
+      ? scanImagePathController.text
+      : _facturaOriginal?.scanImagePath,
+    entryMethod: entryMethodController.text.isNotEmpty
+      ? entryMethodController.text
+      : (_facturaOriginal?.entryMethod ?? 'Editado'),
+    createdAt: _facturaOriginal?.createdAt, // mantener original
     );
 
     await _firestore
@@ -255,6 +297,13 @@ class EditTransactionViewModel extends ChangeNotifier {
     origenController.clear();
     proveedorController.clear();
     lugarController.clear();
+    // Limpiar campos adicionales de factura
+    invoiceNumberController.clear();
+    _invoiceDate = DateTime.now();
+    supplierTaxIdController.clear();
+    taxAmountController.clear();
+    scanImagePathController.clear();
+    entryMethodController.clear();
     _fechaSeleccionada = DateTime.now();
     _error = null;
     _transaccionId = null;

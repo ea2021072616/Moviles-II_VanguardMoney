@@ -182,36 +182,7 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
             );
           },
         ),
-        floatingActionButton: Consumer<VerTransaccionesViewModel>(
-          builder: (context, viewModel, child) {
-            return Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.blueClassic.withOpacity(0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: FloatingActionButton.extended(
-                onPressed: () => _refrescarDatos(viewModel),
-                backgroundColor: AppColors.blueClassic,
-                icon: const Icon(Icons.add_rounded, color: AppColors.white, size: 28),
-                label: const Text(
-                  'Agregar',
-                  style: TextStyle(
-                    color: AppColors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                elevation: 0,
-              ),
-            );
-          },
-        ),
+        // FloatingActionButton removed per UX request
       ),
     );
   }

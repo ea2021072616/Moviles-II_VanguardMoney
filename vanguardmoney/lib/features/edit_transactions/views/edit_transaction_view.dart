@@ -20,13 +20,15 @@ class EditTransactionView extends StatefulWidget {
 
 class _EditTransactionViewState extends State<EditTransactionView> {
   final _formKey = GlobalKey<FormState>();
+  late final EditTransactionViewModel _cachedViewModel;
 
   @override
   void initState() {
     super.initState();
     // Cargar los datos de la transacción
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<EditTransactionViewModel>().cargarTransaccion(
+      _cachedViewModel = context.read<EditTransactionViewModel>();
+      _cachedViewModel.cargarTransaccion(
         widget.transaccionId,
         widget.tipo,
       );
@@ -137,6 +139,30 @@ class _EditTransactionViewState extends State<EditTransactionView> {
 
                       // Lugar
                       _buildLugarField(viewModel),
+                      const SizedBox(height: 16),
+
+                      // Número de factura
+                      _buildInvoiceNumberField(viewModel),
+                      const SizedBox(height: 16),
+
+                      // Fecha de factura
+                      _buildInvoiceDateField(viewModel),
+                      const SizedBox(height: 16),
+
+                      // NIF / RUC proveedor
+                      _buildSupplierTaxIdField(viewModel),
+                      const SizedBox(height: 16),
+
+                      // Monto del impuesto
+                      _buildTaxAmountField(viewModel),
+                      const SizedBox(height: 16),
+
+                      // Ruta de escaneo / imagen (opcional)
+                      _buildScanPathField(viewModel),
+                      const SizedBox(height: 16),
+
+                      // Método de entrada (entry method)
+                      _buildEntryMethodField(viewModel),
                     ],
 
                     const SizedBox(height: 24),
@@ -401,6 +427,105 @@ class _EditTransactionViewState extends State<EditTransactionView> {
     );
   }
 
+  Widget _buildInvoiceNumberField(EditTransactionViewModel viewModel) {
+    return TextFormField(
+      controller: viewModel.invoiceNumberController,
+      decoration: InputDecoration(
+        labelText: 'Número de factura (opcional)',
+        prefixIcon: const Icon(Icons.receipt_long),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.grey[50],
+      ),
+    );
+  }
+
+  Widget _buildInvoiceDateField(EditTransactionViewModel viewModel) {
+    final formato = DateFormat('dd/MM/yyyy');
+    return InkWell(
+      onTap: () => _seleccionarInvoiceDate(viewModel),
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Fecha de factura (opcional)',
+          prefixIcon: const Icon(Icons.calendar_today_outlined),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          fillColor: Colors.grey[50],
+        ),
+        child: Text(
+          formato.format(viewModel.invoiceDate),
+          style: const TextStyle(fontSize: 16),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSupplierTaxIdField(EditTransactionViewModel viewModel) {
+    return TextFormField(
+      controller: viewModel.supplierTaxIdController,
+      decoration: InputDecoration(
+        labelText: 'NIF / RUC del proveedor (opcional)',
+        prefixIcon: const Icon(Icons.badge_outlined),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.grey[50],
+      ),
+      validator: (value) {
+        if (value != null && value.isNotEmpty && value.length > 50) {
+          return 'El NIF/RUC es demasiado largo';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildTaxAmountField(EditTransactionViewModel viewModel) {
+    return TextFormField(
+      controller: viewModel.taxAmountController,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(
+        labelText: 'Impuesto (opcional)',
+        prefixIcon: const Icon(Icons.percent),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.grey[50],
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) return null;
+        final numero = double.tryParse(value);
+        if (numero == null) return 'Ingrese un número válido';
+        if (numero < 0) return 'El impuesto no puede ser negativo';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildScanPathField(EditTransactionViewModel viewModel) {
+    return TextFormField(
+      controller: viewModel.scanImagePathController,
+      decoration: InputDecoration(
+        labelText: 'Ruta de escaneo / imagen (opcional)',
+        prefixIcon: const Icon(Icons.camera_alt_outlined),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.grey[50],
+      ),
+    );
+  }
+
+  Widget _buildEntryMethodField(EditTransactionViewModel viewModel) {
+    return TextFormField(
+      controller: viewModel.entryMethodController,
+      decoration: InputDecoration(
+        labelText: 'Método de ingreso (opcional)',
+        prefixIcon: const Icon(Icons.input),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        filled: true,
+        fillColor: Colors.grey[50],
+      ),
+    );
+  }
+
   Future<void> _seleccionarFecha(EditTransactionViewModel viewModel) async {
     final DateTime? fechaSeleccionada = await showDatePicker(
       context: context,
@@ -448,6 +573,30 @@ class _EditTransactionViewState extends State<EditTransactionView> {
         );
         viewModel.actualizarFecha(nuevaFecha);
       }
+    }
+  }
+
+  Future<void> _seleccionarInvoiceDate(EditTransactionViewModel viewModel) async {
+    final DateTime? fechaSeleccionada = await showDatePicker(
+      context: context,
+      initialDate: viewModel.invoiceDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: Colors.green,
+              onPrimary: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (fechaSeleccionada != null) {
+      viewModel.actualizarInvoiceDate(fechaSeleccionada);
     }
   }
 
@@ -507,7 +656,13 @@ class _EditTransactionViewState extends State<EditTransactionView> {
 
   @override
   void dispose() {
-    context.read<EditTransactionViewModel>().limpiar();
+    // Use cached reference to avoid unsafe ancestor lookup during dispose
+    try {
+      _cachedViewModel.limpiar();
+    } catch (_) {
+      // ignore: avoid_print
+      // if cached viewModel isn't available for any reason, ignore cleanup
+    }
     super.dispose();
   }
 }
