@@ -32,29 +32,18 @@ class FinancialAnalysisService {
     String userId,
     AnalysisPeriod period,
   ) async {
-    // Obtener ingresos del período
+    // Obtener ingresos del usuario (filtraremos por rango en cliente para soportar
+    // fecha guardada como String o Timestamp de forma robusta)
     final ingresosSnapshot = await _firestore
         .collection('ingresos')
         .where('idUsuario', isEqualTo: userId)
-        .where(
-          'fecha',
-          isGreaterThanOrEqualTo: Timestamp.fromDate(period.startDate),
-        )
-        .where('fecha', isLessThanOrEqualTo: Timestamp.fromDate(period.endDate))
         .get();
 
-    // Obtener gastos/facturas del período
+    // Obtener gastos/facturas del usuario (filtraremos por rango en cliente para soportar
+    // invoiceDate guardado como String o Timestamp de forma robusta)
     final facturasSnapshot = await _firestore
         .collection('facturas')
         .where('idUsuario', isEqualTo: userId)
-        .where(
-          'invoiceDate',
-          isGreaterThanOrEqualTo: period.startDate.toIso8601String(),
-        )
-        .where(
-          'invoiceDate',
-          isLessThanOrEqualTo: period.endDate.toIso8601String(),
-        )
         .get();
 
     // Procesar ingresos
@@ -63,12 +52,35 @@ class FinancialAnalysisService {
 
     for (var doc in ingresosSnapshot.docs) {
       final data = doc.data();
+
+      // Parse fecha which might be stored as a Timestamp or as an ISO string
+      DateTime ingresoDate;
+      try {
+        final raw = data['fecha'];
+        if (raw == null) {
+          ingresoDate = DateTime.now();
+        } else if (raw is Timestamp) {
+          ingresoDate = raw.toDate();
+        } else if (raw is String) {
+          ingresoDate = DateTime.tryParse(raw) ?? DateTime.now();
+        } else {
+          ingresoDate = DateTime.now();
+        }
+      } catch (e) {
+        ingresoDate = DateTime.now();
+      }
+
+      // Filtrar por el período solicitado
+      if (ingresoDate.isBefore(period.startDate) || ingresoDate.isAfter(period.endDate)) {
+        continue; // fuera del rango
+      }
+
       final monto = _parseDouble(data['monto']);
       totalIngresos += monto;
       ingresos.add({
         'id': doc.id,
         'monto': monto,
-        'fecha': data['fecha'],
+        'fecha': ingresoDate,
         'categoria': data['categoria'] ?? 'Sin categoría',
         'descripcion': data['descripcion'] ?? '',
         'metodoPago': data['metodoPago'] ?? '',
@@ -84,19 +96,40 @@ class FinancialAnalysisService {
 
     for (var doc in facturasSnapshot.docs) {
       final data = doc.data();
+
+      // Parse invoiceDate which might be stored as a Timestamp or as an ISO string
+      DateTime invoiceDate;
+      try {
+        final raw = data['invoiceDate'];
+        if (raw == null) {
+          invoiceDate = DateTime.now();
+        } else if (raw is Timestamp) {
+          invoiceDate = raw.toDate();
+        } else if (raw is String) {
+          invoiceDate = DateTime.tryParse(raw) ?? DateTime.now();
+        } else {
+          invoiceDate = DateTime.now();
+        }
+      } catch (e) {
+        invoiceDate = DateTime.now();
+      }
+
+      // Filtrar por el período solicitado
+      if (invoiceDate.isBefore(period.startDate) || invoiceDate.isAfter(period.endDate)) {
+        continue; // fuera del rango
+      }
+
       final monto = _parseDouble(data['totalAmount'] ?? data['monto']);
       final categoria = data['categoria'] ?? 'Sin categoría';
 
       totalGastos += monto;
-      gastosPorCategoria[categoria] =
-          (gastosPorCategoria[categoria] ?? 0.0) + monto;
-      transaccionesPorCategoria[categoria] =
-          (transaccionesPorCategoria[categoria] ?? 0) + 1;
+      gastosPorCategoria[categoria] = (gastosPorCategoria[categoria] ?? 0.0) + monto;
+      transaccionesPorCategoria[categoria] = (transaccionesPorCategoria[categoria] ?? 0) + 1;
 
       gastos.add({
         'id': doc.id,
         'monto': monto,
-        'fecha': data['invoiceDate'],
+        'fecha': invoiceDate,
         'categoria': categoria,
         'descripcion': data['description'] ?? '',
         'proveedor': data['supplierName'] ?? '',

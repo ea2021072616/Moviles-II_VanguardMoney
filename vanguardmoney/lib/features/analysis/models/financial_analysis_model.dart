@@ -126,7 +126,8 @@ class AnalysisPeriod {
   /// Crear período mensual
   factory AnalysisPeriod.monthly(int year, int month) {
     final start = DateTime(year, month, 1);
-    final end = DateTime(year, month + 1, 0, 23, 59, 59);
+    // incluir hasta el último milisegundo del último día
+    final end = DateTime(year, month + 1, 0, 23, 59, 59, 999);
     return AnalysisPeriod(
       startDate: start,
       endDate: end,
@@ -138,7 +139,7 @@ class AnalysisPeriod {
   factory AnalysisPeriod.quarterly(int year, int quarter) {
     final startMonth = (quarter - 1) * 3 + 1;
     final start = DateTime(year, startMonth, 1);
-    final end = DateTime(year, startMonth + 3, 0, 23, 59, 59);
+    final end = DateTime(year, startMonth + 3, 0, 23, 59, 59, 999);
     return AnalysisPeriod(
       startDate: start,
       endDate: end,
@@ -150,7 +151,7 @@ class AnalysisPeriod {
   factory AnalysisPeriod.yearly(int year) {
     return AnalysisPeriod(
       startDate: DateTime(year, 1, 1),
-      endDate: DateTime(year, 12, 31, 23, 59, 59),
+      endDate: DateTime(year, 12, 31, 23, 59, 59, 999),
       type: PeriodType.yearly,
     );
   }
