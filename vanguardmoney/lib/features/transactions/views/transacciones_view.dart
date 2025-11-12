@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'ingreso/register_ingreso_view.dart';
 import 'egreso/register_bill_view.dart';
-import 'registrar_con_ia_screen.dart';
+import 'registerIA/registrar_con_ia_screen.dart';
 import '../viewmodels/registrar_IA_viewmodel.dart';
 
 class TransaccionesView extends StatelessWidget {

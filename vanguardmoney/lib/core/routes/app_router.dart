@@ -4,7 +4,7 @@ import '../../features/auth/views/login_page.dart';
 import '../../features/auth/views/edit_profile_page.dart';
 import '../../features/layout/views/main_layout.dart';
 import '../../features/analysis/views/ai_analysis_page.dart';
-import '../../features/Vertodo/views/ver_transacciones_view.dart';
+import '../../features/historial/views/ver_transacciones_view.dart';
 import '../../features/notifications/views/notifications_page.dart';
 import '../widgets/splash_screen.dart';
 import '../constants/app_routes.dart';

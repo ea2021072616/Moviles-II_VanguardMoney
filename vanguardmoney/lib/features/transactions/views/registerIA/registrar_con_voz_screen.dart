@@ -4,9 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import '../viewmodels/registrar_voz_viewmodel.dart';
-import 'egreso/register_bill_view.dart';
-import 'ingreso/register_ingreso_view.dart';
+import '../../viewmodels/registrar_voz_viewmodel.dart';
+import '../egreso/register_bill_view.dart';
+import '../ingreso/register_ingreso_view.dart';
 
 /// Pantalla para registrar transacciones mediante audio/voz con IA
 class RegistrarConVozScreen extends StatefulWidget {
