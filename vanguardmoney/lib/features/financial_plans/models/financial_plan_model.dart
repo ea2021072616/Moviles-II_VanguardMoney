@@ -84,6 +84,7 @@ class FinancialPlanModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final bool isActive;
+  final String? aiSummary; // Resumen de IA sobre el resultado del plan
 
   const FinancialPlanModel({
     required this.id,
@@ -97,6 +98,7 @@ class FinancialPlanModel {
     required this.createdAt,
     required this.updatedAt,
     this.isActive = true,
+    this.aiSummary,
   });
 
   /// Factory constructor desde Map (Firestore)
@@ -126,6 +128,7 @@ class FinancialPlanModel {
           ? (map['updatedAt'] as Timestamp).toDate()
           : DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] ?? 0),
       isActive: map['isActive'] ?? true,
+      aiSummary: map['aiSummary'],
     );
   }
 
@@ -143,6 +146,7 @@ class FinancialPlanModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'isActive': isActive,
+      'aiSummary': aiSummary,
     };
   }
 
@@ -159,6 +163,7 @@ class FinancialPlanModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
+    String? aiSummary,
   }) {
     return FinancialPlanModel(
       id: id ?? this.id,
@@ -172,6 +177,7 @@ class FinancialPlanModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,
+      aiSummary: aiSummary ?? this.aiSummary,
     );
   }
 

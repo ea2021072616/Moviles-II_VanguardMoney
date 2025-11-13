@@ -40,6 +40,221 @@ class _CreatePlanDialogState extends ConsumerState<CreatePlanDialog> {
     super.dispose();
   }
 
+  void _showAIPlanPreviewDialog(FinancialPlanModel aiPlan) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: 500,
+            maxHeight: MediaQuery.of(context).size.height * 0.8,
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.blueClassic,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Plan Generado con IA',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Presupuesto Total: S/ ${aiPlan.totalBudget.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Distribución por categorías
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: aiPlan.categoryBudgets.length,
+                  itemBuilder: (context, index) {
+                    final budget = aiPlan.categoryBudgets[index];
+                    final percentage = (budget.budgetAmount / aiPlan.totalBudget * 100);
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    budget.categoryName,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  'S/ ${budget.budgetAmount.toStringAsFixed(2)}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.blueClassic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: LinearProgressIndicator(
+                                      value: percentage / 100,
+                                      minHeight: 8,
+                                      backgroundColor: Colors.grey[200],
+                                      valueColor: const AlwaysStoppedAnimation<Color>(
+                                        AppColors.blueClassic,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  '${percentage.toStringAsFixed(1)}%',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Botones de acción
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  border: Border(
+                    top: BorderSide(color: Colors.grey[300]!),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: const BorderSide(color: Colors.grey),
+                        ),
+                        child: const Text('Rechazar'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: () => _acceptAIPlan(aiPlan),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.blueClassic,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Aceptar Plan',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _acceptAIPlan(FinancialPlanModel aiPlan) async {
+    Navigator.of(context).pop(); // Cerrar preview
+    
+    setState(() {
+      _isLoading = true;
+    });
+
+    final success = await ref
+        .read(financialPlansViewModelProvider.notifier)
+        .createAIPlanFromPreview(aiPlan);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (context.mounted) {
+      if (success) {
+        Navigator.of(context).pop(); // Cerrar diálogo de creación
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Plan creado con IA exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al crear el plan'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -233,7 +448,9 @@ class _CreatePlanDialogState extends ConsumerState<CreatePlanDialog> {
                           ),
                         ],
                         decoration: InputDecoration(
-                          labelText: 'Presupuesto Total',
+                          labelText: _selectedPlanType == PlanType.ai
+                              ? 'Presupuesto Total (IA lo distribuirá)'
+                              : 'Presupuesto Total',
                           hintText: '0.00',
                           prefixText: 'S/ ',
                           prefixIcon: const Icon(Icons.attach_money),
@@ -244,6 +461,9 @@ class _CreatePlanDialogState extends ConsumerState<CreatePlanDialog> {
                             horizontal: 16,
                             vertical: 16,
                           ),
+                          helperText: _selectedPlanType == PlanType.ai
+                              ? 'La IA distribuirá este monto basándose en tus gastos anteriores'
+                              : null,
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -327,17 +547,17 @@ class _CreatePlanDialogState extends ConsumerState<CreatePlanDialog> {
                                           vertical: 2,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: AppColors.blueClassic
-                                              .withOpacity(0.1),
+                                          color: Colors.green
+                                              .withOpacity(0.2),
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
                                         ),
                                         child: const Text(
-                                          'Próximamente',
+                                          'Automático',
                                           style: TextStyle(
                                             fontSize: 10,
-                                            color: AppColors.blueClassic,
+                                            color: AppColors.blackGrey,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -345,12 +565,18 @@ class _CreatePlanDialogState extends ConsumerState<CreatePlanDialog> {
                                     ],
                                   ),
                                   subtitle: const Text(
-                                    'Recomendaciones inteligentes basadas en IA',
+                                    'Plan generado con IA basado en tus gastos del mes anterior',
                                     style: TextStyle(fontSize: 12),
                                   ),
                                   value: PlanType.ai,
                                   groupValue: _selectedPlanType,
-                                  onChanged: null, // Deshabilitado por ahora
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        _selectedPlanType = value;
+                                      });
+                                    }
+                                  },
                                   activeColor: AppColors.blueClassic,
                                 ),
                               ],
@@ -439,6 +665,38 @@ class _CreatePlanDialogState extends ConsumerState<CreatePlanDialog> {
 
         if (context.mounted) {
           _showPlanExistsDialog(existingPlan);
+        }
+        return;
+      }
+
+      // Si es modo IA, generar preview del plan
+      if (_selectedPlanType == PlanType.ai) {
+        final totalBudget = double.parse(_totalBudgetController.text);
+        
+        final aiPlan = await ref
+            .read(financialPlansViewModelProvider.notifier)
+            .generateAIPlanPreview(
+              targetYear: _selectedYear,
+              targetMonth: _selectedMonth,
+              totalBudget: totalBudget,
+            );
+
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (context.mounted) {
+          if (aiPlan != null) {
+            // Mostrar diálogo de preview
+            _showAIPlanPreviewDialog(aiPlan);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Error al generar plan con IA. Verifica que tengas gastos del mes anterior.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
         return;
       }

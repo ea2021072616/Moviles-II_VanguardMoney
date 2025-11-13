@@ -30,8 +30,12 @@ class CategoriaViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
+      print('🔄 Cargando categorías de tipo: $tipo para usuario: $idUsuario');
       _categorias = await _categoriaService.obtenerCategorias(idUsuario, tipo);
+      print('✅ Categorías cargadas: ${_categorias.length} items');
+      print('📋 Nombres: ${_categorias.map((c) => c.nombre).join(", ")}');
     } catch (e) {
+      print('❌ Error al cargar categorías: $e');
       _errorMessage = 'Error al cargar categorías: ${e.toString()}';
     } finally {
       _isLoading = false;
@@ -196,9 +200,11 @@ class CategoriaViewModel extends ChangeNotifier {
 
   // Obtener nombres de categorías para dropdown
   List<String> obtenerNombresCategorias(TipoCategoria tipo) {
-    return obtenerCategoriasPorTipo(
+    final nombres = obtenerCategoriasPorTipo(
       tipo,
     ).map((categoria) => categoria.nombre).toList();
+    print('📝 obtenerNombresCategorias($tipo) retorna: $nombres');
+    return nombres;
   }
 
   // Verificar si una categoría es personalizada

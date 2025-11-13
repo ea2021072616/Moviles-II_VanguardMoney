@@ -5,40 +5,118 @@ class CategoriaService {
   static const String _collection = 'categorias';
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Obtener todas las categorías (base + personalizadas del usuario)
+  // Obtener todas las categorías del usuario desde la base de datos
   Future<List<CategoriaModel>> obtenerCategorias(
     String idUsuario,
     TipoCategoria tipo,
   ) async {
-    List<CategoriaModel> categorias = [];
-
-    // Agregar categorías base
-    if (tipo == TipoCategoria.ingreso) {
-      categorias.addAll(CategoriaModel.categoriasBaseIngresos);
-    } else {
-      categorias.addAll(CategoriaModel.categoriasBaseEgresos);
-    }
-
-    // Obtener categorías personalizadas del usuario
     try {
       final querySnapshot = await _firestore
           .collection(_collection)
           .where('idUsuario', isEqualTo: idUsuario)
           .where('tipo', isEqualTo: tipo.toString().split('.').last)
-          .where('esPersonalizada', isEqualTo: true)
-          .orderBy('fechaCreacion', descending: false)
           .get();
 
-      final categoriasPersonalizadas = querySnapshot.docs
+      final categorias = querySnapshot.docs
           .map((doc) => CategoriaModel.fromDocument(doc))
           .toList();
+      
+      // Ordenar manualmente por fecha de creación (más antiguas primero)
+      categorias.sort((a, b) => a.fechaCreacion.compareTo(b.fechaCreacion));
 
-      categorias.addAll(categoriasPersonalizadas);
+      // Si no tiene categorías, crear las por defecto
+      if (categorias.isEmpty) {
+        await crearCategoriasDefecto(idUsuario);
+        // Volver a consultar después de crear
+        final newQuery = await _firestore
+            .collection(_collection)
+            .where('idUsuario', isEqualTo: idUsuario)
+            .where('tipo', isEqualTo: tipo.toString().split('.').last)
+            .get();
+        
+        final newCategorias = newQuery.docs
+            .map((doc) => CategoriaModel.fromDocument(doc))
+            .toList();
+        
+        // Ordenar manualmente
+        newCategorias.sort((a, b) => a.fechaCreacion.compareTo(b.fechaCreacion));
+        return newCategorias;
+      }
+
+      return categorias;
     } catch (e) {
-      print('Error al obtener categorías personalizadas: $e');
+      print('Error al obtener categorías: $e');
+      return [];
     }
+  }
 
-    return categorias;
+  /// Crear categorías por defecto para un nuevo usuario
+  Future<bool> crearCategoriasDefecto(String idUsuario) async {
+    try {
+      // Verificar si ya tiene categorías
+      final existingQuery = await _firestore
+          .collection(_collection)
+          .where('idUsuario', isEqualTo: idUsuario)
+          .limit(1)
+          .get();
+
+      if (existingQuery.docs.isNotEmpty) {
+        print('El usuario ya tiene categorías');
+        return true; // Ya tiene categorías
+      }
+
+      final batch = _firestore.batch();
+      final now = DateTime.now();
+
+      // Crear categorías de ingresos
+      final categoriasIngresos = [
+        {'id': 'sueldo', 'nombre': 'Sueldo'},
+        {'id': 'servicios', 'nombre': 'Servicios'},
+        {'id': 'inversiones', 'nombre': 'Inversiones'},
+      ];
+
+      for (final cat in categoriasIngresos) {
+        final docRef = _firestore.collection(_collection).doc();
+        batch.set(docRef, {
+          'id': docRef.id,
+          'nombre': cat['nombre'],
+          'tipo': 'ingreso',
+          'esPersonalizada': false,
+          'idUsuario': idUsuario,
+          'fechaCreacion': now.toIso8601String(),
+        });
+      }
+
+      // Crear categorías de egresos
+      final categoriasEgresos = [
+        {'id': 'vivienda', 'nombre': 'Vivienda'},
+        {'id': 'alimentacion', 'nombre': 'Alimentación'},
+        {'id': 'transporte', 'nombre': 'Transporte'},
+        {'id': 'salud', 'nombre': 'Salud'},
+        {'id': 'educacion', 'nombre': 'Educación'},
+        {'id': 'entretenimiento', 'nombre': 'Entretenimiento'},
+        {'id': 'ropa', 'nombre': 'Ropa'},
+      ];
+
+      for (final cat in categoriasEgresos) {
+        final docRef = _firestore.collection(_collection).doc();
+        batch.set(docRef, {
+          'id': docRef.id,
+          'nombre': cat['nombre'],
+          'tipo': 'egreso',
+          'esPersonalizada': false,
+          'idUsuario': idUsuario,
+          'fechaCreacion': now.toIso8601String(),
+        });
+      }
+
+      await batch.commit();
+      print('Categorías por defecto creadas exitosamente para usuario: $idUsuario');
+      return true;
+    } catch (e) {
+      print('Error al crear categorías por defecto: $e');
+      return false;
+    }
   }
 
   // Agregar nueva categoría personalizada
@@ -92,13 +170,13 @@ class CategoriaService {
     }
   }
 
-  // Eliminar categoría personalizada
+  // Eliminar categoría (personalizada o por defecto)
   Future<bool> eliminarCategoriaPersonalizada(
     String idCategoria,
     String idUsuario,
   ) async {
     try {
-      // Verificar que la categoría pertenece al usuario y es personalizada
+      // Verificar que la categoría pertenece al usuario
       final doc = await _firestore
           .collection(_collection)
           .doc(idCategoria)
@@ -108,7 +186,8 @@ class CategoriaService {
 
       final categoria = CategoriaModel.fromDocument(doc);
 
-      if (!categoria.esPersonalizada || categoria.idUsuario != idUsuario) {
+      // Solo verificar que pertenece al usuario
+      if (categoria.idUsuario != idUsuario) {
         return false;
       }
 
@@ -127,32 +206,20 @@ class CategoriaService {
     TipoCategoria tipo,
   ) async {
     try {
-      // Verificar en categorías base
-      final categoriasBase = tipo == TipoCategoria.ingreso
-          ? CategoriaModel.categoriasBaseIngresos
-          : CategoriaModel.categoriasBaseEgresos;
-
-      final existeEnBase = categoriasBase.any(
-        (cat) => cat.nombre.toLowerCase() == nombre.toLowerCase(),
-      );
-
-      if (existeEnBase) return true;
-
-      // Verificar en categorías personalizadas
+      // Verificar en todas las categorías del usuario (base y personalizadas)
       final querySnapshot = await _firestore
           .collection(_collection)
           .where('idUsuario', isEqualTo: idUsuario)
           .where('tipo', isEqualTo: tipo.toString().split('.').last)
-          .where('esPersonalizada', isEqualTo: true)
           .get();
 
-      final existeEnPersonalizadas = querySnapshot.docs.any(
+      final existe = querySnapshot.docs.any(
         (doc) =>
             doc.data()['nombre'].toString().toLowerCase() ==
             nombre.toLowerCase(),
       );
 
-      return existeEnPersonalizadas;
+      return existe;
     } catch (e) {
       print('Error al verificar categoría existente: $e');
       return true; // En caso de error, asumimos que existe para evitar duplicados
@@ -170,12 +237,16 @@ class CategoriaService {
           .where('idUsuario', isEqualTo: idUsuario)
           .where('tipo', isEqualTo: tipo.toString().split('.').last)
           .where('esPersonalizada', isEqualTo: true)
-          .orderBy('fechaCreacion', descending: false)
           .get();
 
-      return querySnapshot.docs
+      final categorias = querySnapshot.docs
           .map((doc) => CategoriaModel.fromDocument(doc))
           .toList();
+      
+      // Ordenar manualmente por fecha de creación
+      categorias.sort((a, b) => a.fechaCreacion.compareTo(b.fechaCreacion));
+      
+      return categorias;
     } catch (e) {
       print('Error al obtener categorías personalizadas: $e');
       return [];
@@ -192,12 +263,16 @@ class CategoriaService {
         .where('idUsuario', isEqualTo: idUsuario)
         .where('tipo', isEqualTo: tipo.toString().split('.').last)
         .where('esPersonalizada', isEqualTo: true)
-        .orderBy('fechaCreacion', descending: false)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => CategoriaModel.fromDocument(doc))
-              .toList(),
+          (snapshot) {
+            final categorias = snapshot.docs
+                .map((doc) => CategoriaModel.fromDocument(doc))
+                .toList();
+            // Ordenar manualmente por fecha de creación
+            categorias.sort((a, b) => a.fechaCreacion.compareTo(b.fechaCreacion));
+            return categorias;
+          },
         );
   }
 }

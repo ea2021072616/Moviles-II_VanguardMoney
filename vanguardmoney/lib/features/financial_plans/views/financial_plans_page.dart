@@ -6,7 +6,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../transactions/views/gestionar_categorias_view.dart';
 import '../../transactions/models/categoria_model.dart';
 import '../../auth/providers/auth_providers.dart';
-import 'widgets/create_plan_dialog.dart';
+import 'create_plan_page.dart';
+import 'plans_history_page.dart';
 import 'widgets/plan_card.dart';
 import 'widgets/category_budget_card.dart';
 
@@ -81,9 +82,26 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
               case 'categories':
                 _navigateToCategories(context);
                 break;
+              case 'history':
+                _navigateToHistory(context);
+                break;
             }
           },
           itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'history',
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.history,
+                    color: theme.colorScheme.primary,
+                    size: 22,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Historial de Planes'),
+                ],
+              ),
+            ),
             PopupMenuItem(
               value: 'toggle_view',
               child: Row(
@@ -342,6 +360,28 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
                 color: Colors.white.withOpacity(0.85),
                 fontWeight: FontWeight.w500,
               ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Indicador de sincronización automática
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.sync,
+                  size: 14,
+                  color: Colors.white.withOpacity(0.7),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Sincronización automática activa',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 16),
@@ -743,14 +783,15 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
   }
 
   void _showCreatePlanDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => CreatePlanDialog(
-        onPlanCreated: () {
-          ref
-              .read(financialPlansViewModelProvider.notifier)
-              .loadFinancialPlans();
-        },
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CreatePlanPage(
+          onPlanCreated: () {
+            ref
+                .read(financialPlansViewModelProvider.notifier)
+                .loadFinancialPlans();
+          },
+        ),
       ),
     );
   }
@@ -767,6 +808,14 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
         ),
       );
     }
+  }
+
+  void _navigateToHistory(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const PlansHistoryPage(),
+      ),
+    );
   }
 
   void _showPlanDetails(BuildContext context, FinancialPlanModel plan) {

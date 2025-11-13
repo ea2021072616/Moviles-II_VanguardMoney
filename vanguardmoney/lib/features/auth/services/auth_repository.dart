@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 import '../models/user_profile_model.dart';
 import '../../../core/exceptions/error_handler.dart';
 import '../../../core/exceptions/app_exception.dart';
+import '../../transactions/services/categoria_service.dart';
 
 /// Repository que encapsula todas las operaciones de autenticación
 /// Usa el sistema centralizado de error handling (ErrorHandler + AppException)
@@ -126,6 +127,15 @@ class AuthRepository {
           .collection('users')
           .doc(result.user!.uid)
           .set(userProfile.toMap());
+
+      // Crear categorías por defecto para el nuevo usuario
+      try {
+        final categoriaService = CategoriaService();
+        await categoriaService.crearCategoriasDefecto(result.user!.uid);
+      } catch (e) {
+        print('Error al crear categorías por defecto: $e');
+        // No lanzar error, el usuario puede crearlas después
+      }
 
       return UserModel.fromFirebaseUser(result.user!);
     } catch (e, stackTrace) {
@@ -369,6 +379,14 @@ class AuthRepository {
         );
 
         await _firestore.collection('users').doc(user.uid).set(profile.toMap());
+        
+        // Crear categorías por defecto para el nuevo usuario de Google
+        try {
+          final categoriaService = CategoriaService();
+          await categoriaService.crearCategoriasDefecto(user.uid);
+        } catch (e) {
+          print('Error al crear categorías por defecto para usuario Google: $e');
+        }
       } else {
         // Actualizar información con datos de Google
         await _firestore.collection('users').doc(user.uid).update({

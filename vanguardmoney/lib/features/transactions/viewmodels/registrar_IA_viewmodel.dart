@@ -3,14 +3,17 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import '../models/categoria_model.dart';
+import '../services/categoria_service.dart';
 
 class RegistrarMedianteIAViewModel extends ChangeNotifier {
   GenerativeModel? _model;
+  final CategoriaService _categoriaService = CategoriaService();
   bool _isLoading = false;
   String? _errorMessage;
   Map<String, dynamic>? _datosExtraidos;
   String? _categoriaSugerida;
   bool _categoriaConfirmada = false;
+  String? _currentUserId;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -50,6 +53,7 @@ class RegistrarMedianteIAViewModel extends ChangeNotifier {
     _datosExtraidos = null;
     _categoriaSugerida = null;
     _categoriaConfirmada = false;
+    _currentUserId = idUsuario;
     notifyListeners();
 
     try {
@@ -116,8 +120,14 @@ class RegistrarMedianteIAViewModel extends ChangeNotifier {
       final imageFile = File(imagePath);
       final imageBytes = await imageFile.readAsBytes();
       
-      // Obtener las categorías disponibles
-      final categoriasDisponibles = CategoriaModel.categoriasBaseEgresos
+      // Obtener las categorías disponibles desde la base de datos
+      if (_currentUserId == null) {
+        _errorMessage = 'No se encontró el ID de usuario';
+        return null;
+      }
+      
+      final categoriasEgresosList = await _categoriaService.obtenerCategorias(_currentUserId!, TipoCategoria.egreso);
+      final categoriasDisponibles = categoriasEgresosList
           .map((c) => c.nombre)
           .join(', ');
 

@@ -51,40 +51,45 @@ class _CustomDistributionDialogState
 
   Future<void> _loadCategories() async {
     try {
-      // Cargar categorías base de egresos
-      final baseCategories = CategoriaModel.categoriasBaseEgresos;
+      // Obtener el ID del usuario autenticado
+      final authState = ref.read(authStateProvider);
+      List<CategoriaModel> allCategories = [];
+      
+      await authState.when(
+        data: (user) async {
+          if (user != null) {
+            // Cargar todas las categorías de egreso del usuario (incluye las por defecto)
+            allCategories = await _categoriaService.obtenerCategorias(
+              user.id,
+              TipoCategoria.egreso,
+            );
+          }
+        },
+        loading: () async {},
+        error: (error, stack) async {},
+      );
 
-      // Cargar categorías personalizadas del usuario
-      List<CategoriaModel> userCategories = [];
-
-      try {
-        // Obtener el ID del usuario autenticado usando el authStateProvider
-        final authState = ref.read(authStateProvider);
-        await authState.when(
-          data: (user) async {
-            if (user != null) {
-              userCategories = await _categoriaService
-                  .obtenerCategoriasPersonalizadas(
-                    user.id,
-                    TipoCategoria.egreso,
-                  );
-            }
-          },
-          loading: () async {},
-          error: (error, stack) async {},
-        );
-      } catch (e) {
-        // Si hay error cargando categorías personalizadas, continuar solo con las básicas
-        print('Error cargando categorías personalizadas: $e');
+      if (allCategories.isEmpty) {
+        // Fallback: si no hay categorías, algo salió mal
+        print('No se encontraron categorías de egreso');
+        setState(() {
+          _loadingCategories = false;
+        });
+        return;
       }
 
-      // Combinar categorías base y personalizadas
-      _allCategories = [...baseCategories, ...userCategories];
+      _allCategories = allCategories;
 
-      // Inicialmente seleccionar solo las más comunes (de las básicas)
+      // Inicialmente seleccionar las más comunes
       _selectedCategories = [
-        baseCategories.firstWhere((cat) => cat.id == 'alimentacion'),
-        baseCategories.firstWhere((cat) => cat.id == 'transporte'),
+        allCategories.firstWhere(
+          (cat) => cat.nombre.toLowerCase() == 'alimentación',
+          orElse: () => allCategories.first,
+        ),
+        allCategories.firstWhere(
+          (cat) => cat.nombre.toLowerCase() == 'transporte',
+          orElse: () => allCategories.length > 1 ? allCategories[1] : allCategories.first,
+        ),
       ];
 
       setState(() {
@@ -92,12 +97,6 @@ class _CustomDistributionDialogState
       });
     } catch (e) {
       print('Error cargando categorías: $e');
-      // Si hay error, al menos cargar las categorías básicas
-      _allCategories = CategoriaModel.categoriasBaseEgresos;
-      _selectedCategories = [
-        _allCategories.firstWhere((cat) => cat.id == 'alimentacion'),
-        _allCategories.firstWhere((cat) => cat.id == 'transporte'),
-      ];
       setState(() {
         _loadingCategories = false;
       });
@@ -230,222 +229,197 @@ class _CustomDistributionDialogState
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        constraints: BoxConstraints(
-          maxWidth: 600,
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.arrow_back, color: AppColors.blackGrey),
         ),
-        child: Column(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.pinkPastel.withOpacity(0.1),
-                      shape: BoxShape.circle,
+            const Text(
+              'Distribución Personalizada',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.blackGrey,
+              ),
+            ),
+            Text(
+              widget.planName,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.greyDark,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          // Budget Summary Card
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.greyLight,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Presupuesto Total',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.greyDark,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.tune,
-                      color: AppColors.pinkPastel,
-                      size: 24,
+                    Text(
+                      'S/ ${widget.totalBudget.toStringAsFixed(2)}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.blackGrey,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    const Text(
+                      'Restante',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.greyDark,
+                      ),
+                    ),
+                    Text(
+                      'S/ ${_remaining.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: _remaining < 0
+                            ? AppColors.redCoral
+                            : AppColors.greenJade,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Lista de categorías scrollable
+          Expanded(
+            child: _loadingCategories
+                ? const Center(child: CircularProgressIndicator())
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Distribución Personalizada',
+                          'Asignar presupuesto por categoría:',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                             color: AppColors.blackGrey,
                           ),
                         ),
-                        Text(
-                          widget.planName,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColors.greyDark,
+                        const SizedBox(height: 12),
+
+                        // Categorías seleccionadas
+                        ..._selectedCategories.map(
+                          (category) => _buildCategoryBudgetCard(category),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Botón para agregar más categorías
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _showAddCategoryDialog,
+                            icon: const Icon(Icons.add, size: 18),
+                            label: const Text('Agregar categoría'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                              ),
+                              side: BorderSide(
+                                color: Colors.grey.withOpacity(0.3),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
+          ),
+
+          // Botones
+          Container(
+            padding: const EdgeInsets.all(24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    child: const Text('Cancelar'),
                   ),
-                ],
-              ),
-            ),
-
-            // Resumen de presupuesto
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 24),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.greyLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Presupuesto Total',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.greyDark,
-                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: (_isLoading || _remaining.abs() > 0.01)
+                        ? null
+                        : _createCustomPlan,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.pinkPastel,
+                      foregroundColor: AppColors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      Text(
-                        'S/ ${widget.totalBudget.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.blackGrey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'Restante',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.greyDark,
-                        ),
-                      ),
-                      Text(
-                        'S/ ${_remaining.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: _remaining < 0
-                              ? AppColors.redCoral
-                              : AppColors.greenJade,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Lista de categorías scrollable
-            Expanded(
-              child: _loadingCategories
-                  ? const Center(child: CircularProgressIndicator())
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Asignar presupuesto por categoría:',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.blackGrey,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Categorías seleccionadas
-                          ..._selectedCategories.map(
-                            (category) => _buildCategoryBudgetCard(category),
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          // Botón para agregar más categorías
-                          Container(
-                            width: double.infinity,
-                            child: OutlinedButton.icon(
-                              onPressed: _showAddCategoryDialog,
-                              icon: const Icon(Icons.add, size: 18),
-                              label: const Text('Agregar categoría'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                side: BorderSide(
-                                  color: Colors.grey.withOpacity(0.3),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.white,
                               ),
                             ),
+                          )
+                        : const Text(
+                            'Crear Plan',
+                            style: TextStyle(fontWeight: FontWeight.w600),
                           ),
-                        ],
-                      ),
-                    ),
-            ),
-
-            // Botones
-            Container(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => Navigator.of(context).pop(),
-                      child: const Text('Cancelar'),
-                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: (_isLoading || _remaining.abs() > 0.01)
-                          ? null
-                          : _createCustomPlan,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.pinkPastel,
-                        foregroundColor: AppColors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  AppColors.white,
-                                ),
-                              ),
-                            )
-                          : const Text(
-                              'Crear Plan',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -600,9 +574,8 @@ class _CustomDistributionDialogState
           );
 
       if (success && context.mounted) {
-        Navigator.of(context).pop(); // Cierra el dialog de distribución
-        Navigator.of(context).pop(); // Cierra el dialog principal
         widget.onPlanCreated?.call();
+        Navigator.of(context).pop(true); // Retorna true indicando éxito
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

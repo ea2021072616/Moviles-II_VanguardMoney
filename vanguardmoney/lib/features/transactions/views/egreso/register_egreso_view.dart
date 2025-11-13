@@ -342,27 +342,49 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                   Row(
                     children: [
                       Expanded(
-                        child: DropdownButtonFormField<String>(
-                          decoration: InputDecoration(
-                            labelText: 'Categoría',
-                            prefixIcon: const Icon(Icons.category),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          value: viewModel.categoriaSeleccionada,
-                          items: categoriaViewModel
-                              .obtenerNombresCategorias(TipoCategoria.egreso)
-                              .map(
-                                (cat) => DropdownMenuItem(
-                                  value: cat,
-                                  child: Text(cat),
+                        child: categoriaViewModel.isLoading
+                            ? Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.all(16),
+                                child: const Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Text('Cargando categorías...'),
+                                  ],
                                 ),
                               )
-                              .toList(),
-                          onChanged: viewModel.setCategoria,
-                          validator: validarCategoria,
-                        ),
+                            : DropdownButtonFormField<String>(
+                                decoration: InputDecoration(
+                                  labelText: 'Categoría',
+                                  prefixIcon: const Icon(Icons.category),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  helperText: categoriaViewModel.obtenerNombresCategorias(TipoCategoria.egreso).isEmpty
+                                      ? 'No hay categorías disponibles'
+                                      : null,
+                                ),
+                                value: viewModel.categoriaSeleccionada,
+                                items: categoriaViewModel
+                                    .obtenerNombresCategorias(TipoCategoria.egreso)
+                                    .map(
+                                      (cat) => DropdownMenuItem(
+                                        value: cat,
+                                        child: Text(cat),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: viewModel.setCategoria,
+                                validator: validarCategoria,
+                              ),
                       ),
                       const SizedBox(width: 8),
                       Container(
@@ -407,7 +429,7 @@ class _RegisterBillViewState extends ConsumerState<RegisterBillView> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         textStyle: const TextStyle(fontSize: 18),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       onPressed: () async {

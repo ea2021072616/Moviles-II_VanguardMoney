@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import '../models/categoria_model.dart';
+import '../services/categoria_service.dart';
 
 class RegistrarMedianteVozViewModel extends ChangeNotifier {
   GenerativeModel? _model;
+  final CategoriaService _categoriaService = CategoriaService();
   bool _isLoading = false;
   bool _isRecording = false;
   String? _errorMessage;
@@ -13,6 +15,7 @@ class RegistrarMedianteVozViewModel extends ChangeNotifier {
   String? _categoriaSugerida;
   String? _tipoTransaccion; // 'ingreso' o 'egreso'
   String? _audioPath;
+  String? _currentUserId; // Para almacenar el userId cuando se llama a analizarAudio
 
   bool get isLoading => _isLoading;
   bool get isRecording => _isRecording;
@@ -68,6 +71,7 @@ class RegistrarMedianteVozViewModel extends ChangeNotifier {
     _categoriaSugerida = null;
     _tipoTransaccion = null;
     _audioPath = audioPath;
+    _currentUserId = idUsuario; // Guardar userId para usarlo en _analizarAudioConGemini
     notifyListeners();
 
     try {
@@ -138,12 +142,20 @@ class RegistrarMedianteVozViewModel extends ChangeNotifier {
       final audioFile = File(audioPath);
       final audioBytes = await audioFile.readAsBytes();
       
-      // Obtener las categorías disponibles
-      final categoriasEgresos = CategoriaModel.categoriasBaseEgresos
+      // Obtener las categorías disponibles desde la base de datos
+      if (_currentUserId == null) {
+        _errorMessage = 'No se encontró el ID de usuario';
+        return null;
+      }
+      
+      final categoriasEgresosList = await _categoriaService.obtenerCategorias(_currentUserId!, TipoCategoria.egreso);
+      final categoriasIngresosList = await _categoriaService.obtenerCategorias(_currentUserId!, TipoCategoria.ingreso);
+      
+      final categoriasEgresos = categoriasEgresosList
           .map((c) => c.nombre)
           .join(', ');
       
-      final categoriasIngresos = CategoriaModel.categoriasBaseIngresos
+      final categoriasIngresos = categoriasIngresosList
           .map((c) => c.nombre)
           .join(', ');
 

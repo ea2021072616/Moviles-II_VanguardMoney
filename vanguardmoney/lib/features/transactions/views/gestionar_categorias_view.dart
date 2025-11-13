@@ -28,11 +28,11 @@ class _GestionarCategoriasViewState
   @override
   void initState() {
     super.initState();
-    // Cargar categorías al iniciar
+    // Cargar TODAS las categorías al iniciar (por defecto + personalizadas)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(categoriaViewModelProvider)
-          .cargarCategoriasPersonalizadas(widget.idUsuario, widget.tipo);
+          .cargarCategorias(widget.idUsuario, widget.tipo);
     });
   }
 
@@ -171,11 +171,11 @@ class _GestionarCategoriasViewState
     BuildContext context,
     CategoriaViewModel viewModel,
   ) {
-    if (viewModel.isLoading && viewModel.categoriasPersonalizadas.isEmpty) {
+    if (viewModel.isLoading && viewModel.categorias.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (viewModel.categoriasPersonalizadas.isEmpty) {
+    if (viewModel.categorias.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -183,7 +183,7 @@ class _GestionarCategoriasViewState
             Icon(Icons.category_outlined, size: 64, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
-              'No tienes categorías personalizadas',
+              'No tienes categorías',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
@@ -202,9 +202,9 @@ class _GestionarCategoriasViewState
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: viewModel.categoriasPersonalizadas.length,
+      itemCount: viewModel.categorias.length,
       itemBuilder: (context, index) {
-        final categoria = viewModel.categoriasPersonalizadas[index];
+        final categoria = viewModel.categorias[index];
         return _buildCategoriaItem(context, viewModel, categoria, index);
       },
     );
@@ -256,8 +256,12 @@ class _GestionarCategoriasViewState
           style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 16),
         ),
         subtitle: Text(
-          'Personalizada',
-          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+          categoria.esPersonalizada ? 'Personalizada' : 'Por defecto',
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 12,
+            fontStyle: categoria.esPersonalizada ? FontStyle.normal : FontStyle.italic,
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,

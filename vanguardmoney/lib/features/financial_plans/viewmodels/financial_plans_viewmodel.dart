@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/financial_plan_model.dart';
 import '../services/financial_plans_service.dart';
@@ -78,10 +79,45 @@ class FinancialPlansViewModel extends AsyncNotifier<FinancialPlansState> {
       state = AsyncValue.data(
         FinancialPlansLoaded(plans, currentPlan: currentPlan),
       );
+
+      // Auto-sincronizar gastos reales de todos los planes en segundo plano (sin await)
+      // Esto no bloquea la UI
+      unawaited(_autoSyncAllPlans(user.id, plans));
     } catch (e) {
       state = AsyncValue.data(
         FinancialPlansError('Error al cargar planes: $e'),
       );
+    }
+  }
+
+  /// Sincronizar automáticamente los gastos reales de todos los planes
+  Future<void> _autoSyncAllPlans(String userId, List<FinancialPlanModel> plans) async {
+    for (final plan in plans) {
+      try {
+        await _financialPlansService.syncRealExpenses(
+          planId: plan.id,
+          userId: userId,
+          year: plan.year,
+          month: plan.month,
+        );
+      } catch (e) {
+        print('Error auto-sincronizando plan ${plan.id}: $e');
+      }
+    }
+    // Recargar silenciosamente después de sincronizar
+    try {
+      final updatedPlans = await _financialPlansService.getUserFinancialPlans(userId);
+      final now = DateTime.now();
+      final updatedCurrentPlan = await _financialPlansService.getPlanByMonth(
+        userId: userId,
+        year: now.year,
+        month: now.month,
+      );
+      state = AsyncValue.data(
+        FinancialPlansLoaded(updatedPlans, currentPlan: updatedCurrentPlan),
+      );
+    } catch (e) {
+      print('Error recargando después de auto-sync: $e');
     }
   }
 
@@ -162,7 +198,22 @@ class FinancialPlansViewModel extends AsyncNotifier<FinancialPlansState> {
           throw Exception('Función de IA aún no implementada');
       }
 
-      await _financialPlansService.createFinancialPlan(newPlan);
+      final planId = await _financialPlansService.createFinancialPlan(newPlan);
+      
+      // Auto-sincronizar gastos reales inmediatamente después de crear
+      if (planId != null) {
+        try {
+          await _financialPlansService.syncRealExpenses(
+            planId: planId,
+            userId: user.id,
+            year: year,
+            month: month,
+          );
+        } catch (e) {
+          print('Error auto-sincronizando plan recién creado: $e');
+        }
+      }
+      
       await loadFinancialPlans(); // Recargar planes
       return true;
     } catch (e) {
@@ -276,6 +327,122 @@ class FinancialPlansViewModel extends AsyncNotifier<FinancialPlansState> {
     } catch (e) {
       print('Error al obtener estadísticas: $e');
       return {};
+    }
+  }
+
+  /// Sincronizar gastos reales desde las transacciones
+  Future<bool> syncRealExpenses({
+    required String planId,
+    required int year,
+    required int month,
+  }) async {
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) return false;
+
+      final success = await _financialPlansService.syncRealExpenses(
+        planId: planId,
+        userId: user.id,
+        year: year,
+        month: month,
+      );
+
+      if (success) {
+        await loadFinancialPlans();
+      }
+      return success;
+    } catch (e) {
+      print('Error al sincronizar gastos: $e');
+      return false;
+    }
+  }
+
+  /// Generar preview de plan con IA (sin guardar)
+  Future<FinancialPlanModel?> generateAIPlanPreview({
+    required int targetYear,
+    required int targetMonth,
+    required double totalBudget,
+  }) async {
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final categories = await getAvailableCategories();
+      if (categories.isEmpty) {
+        throw Exception('No hay categorías disponibles');
+      }
+
+      final aiPlan = await _financialPlansService.createAIPlan(
+        userId: user.id,
+        targetYear: targetYear,
+        targetMonth: targetMonth,
+        totalBudget: totalBudget,
+        categories: categories,
+      );
+
+      return aiPlan;
+    } catch (e) {
+      print('Error al generar preview de plan IA: $e');
+      return null;
+    }
+  }
+
+  /// Crear plan desde el preview aprobado
+  Future<bool> createAIPlanFromPreview(FinancialPlanModel aiPlan) async {
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final planId = await _financialPlansService.createFinancialPlan(aiPlan);
+      
+      // Auto-sincronizar gastos reales del plan creado con IA
+      if (planId != null) {
+        try {
+          await _financialPlansService.syncRealExpenses(
+            planId: planId,
+            userId: user.id,
+            year: aiPlan.year,
+            month: aiPlan.month,
+          );
+        } catch (e) {
+          print('Error auto-sincronizando plan IA: $e');
+        }
+      }
+      
+      await loadFinancialPlans();
+      return true;
+    } catch (e) {
+      state = AsyncValue.data(
+        FinancialPlansError('Error al crear plan con IA: $e'),
+      );
+      return false;
+    }
+  }
+
+  /// Generar resumen con IA para un plan pasado
+  Future<bool> generatePlanSummary(String planId) async {
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final success = await _financialPlansService.generateAISummary(
+        planId: planId,
+        userId: user.id,
+      );
+
+      if (success) {
+        await loadFinancialPlans();
+      }
+      return success;
+    } catch (e) {
+      print('Error al generar resumen IA: $e');
+      return false;
     }
   }
 }
