@@ -82,6 +82,20 @@ class ProfileDrawer extends ConsumerWidget {
 
                 const SizedBox(height: 24),
 
+                // Sección de Reportes
+                _buildSectionTitle(context, 'Reportes'),
+                const SizedBox(height: 8),
+                _buildMenuItem(
+                  context,
+                  Icons.picture_as_pdf_outlined,
+                  Icons.picture_as_pdf_rounded,
+                  'Exportar Reportes',
+                  () => context.push('/reports'),
+                  color: AppColors.redCoral,
+                ),
+
+                const SizedBox(height: 24),
+
                 // Sección de Soporte
                 _buildSectionTitle(context, 'Soporte'),
                 const SizedBox(height: 8),

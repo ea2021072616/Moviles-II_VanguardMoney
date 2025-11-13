@@ -6,6 +6,7 @@ import '../../features/layout/views/main_layout.dart';
 import '../../features/analysis/views/ai_analysis_page.dart';
 import '../../features/historial/views/ver_transacciones_view.dart';
 import '../../features/notifications/views/notifications_page.dart';
+import '../../features/reports/views/reports_selection_view.dart';
 import '../widgets/splash_screen.dart';
 import '../constants/app_routes.dart';
 
@@ -61,6 +62,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.notifications,
         name: 'notifications',
         builder: (context, state) => const NotificationsPage(),
+      ),
+
+      // Ruta para reportes
+      GoRoute(
+        path: '/reports',
+        name: 'reports',
+        builder: (context, state) => const ReportsSelectionView(),
       ),
 
       // Ruta de fallback

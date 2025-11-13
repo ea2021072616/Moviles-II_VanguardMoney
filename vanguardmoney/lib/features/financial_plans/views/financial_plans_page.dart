@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../transactions/views/gestionar_categorias_view.dart';
 import '../../transactions/models/categoria_model.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../reports/services/report_service.dart';
 import 'create_plan_page.dart';
 import 'plans_history_page.dart';
 import 'widgets/plan_card.dart';
@@ -227,6 +228,7 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
             onTap: () => _showPlanDetails(context, plan),
             onEdit: () => _editPlan(context, plan),
             onDelete: () => _deletePlan(context, plan),
+            onGenerateReport: () => _generatePlanReport(context, plan),
           ),
         );
       },
@@ -879,6 +881,119 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Gasto actualizado')));
+    }
+  }
+
+  Future<void> _generatePlanReport(
+    BuildContext context,
+    FinancialPlanModel plan,
+  ) async {
+    // Mostrar diálogo de carga
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppColors.pinkPastel),
+                SizedBox(height: 16),
+                Text('Generando reporte...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final reportService = ReportService();
+
+      final authState = ref.read(authStateProvider);
+      String? userId;
+
+      authState.whenData((user) {
+        if (user != null) {
+          userId = user.id;
+        }
+      });
+
+      if (userId == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final reportData = await reportService.getPlanComplianceData(
+        userId: userId!,
+        planId: plan.id,
+      );
+
+      if (reportData == null) {
+        throw Exception('No se pudo obtener los datos del plan');
+      }
+
+      final pdfFile = await reportService.generatePlanCompliancePDF(reportData);
+
+      if (context.mounted) {
+        Navigator.pop(context); // Cerrar diálogo de carga
+
+        // Mostrar opciones para compartir/guardar
+        showModalBottomSheet(
+          context: context,
+          builder: (context) => Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Reporte generado exitosamente',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ListTile(
+                  leading: const Icon(Icons.share, color: AppColors.pinkPastel),
+                  title: const Text('Compartir PDF'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await reportService.sharePDF(pdfFile);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.print, color: AppColors.blueLavender),
+                  title: const Text('Imprimir PDF'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await reportService.printPDF(pdfFile);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.check_circle, color: AppColors.greenJade),
+                  title: const Text('Guardado en Documentos'),
+                  subtitle: Text(
+                    pdfFile.path,
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Cerrar diálogo de carga
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al generar reporte: $e'),
+            backgroundColor: AppColors.redCoral,
+          ),
+        );
+      }
     }
   }
 }

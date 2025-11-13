@@ -7,6 +7,7 @@ class PlanCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
+  final VoidCallback? onGenerateReport;
 
   const PlanCard({
     super.key,
@@ -14,6 +15,7 @@ class PlanCard extends StatelessWidget {
     this.onTap,
     this.onEdit,
     this.onDelete,
+    this.onGenerateReport,
   });
 
   @override
@@ -85,7 +87,7 @@ class PlanCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  if (onEdit != null || onDelete != null)
+                  if (onEdit != null || onDelete != null || onGenerateReport != null)
                     PopupMenuButton<String>(
                       onSelected: (value) {
                         switch (value) {
@@ -95,9 +97,30 @@ class PlanCard extends StatelessWidget {
                           case 'delete':
                             onDelete?.call();
                             break;
+                          case 'report':
+                            onGenerateReport?.call();
+                            break;
                         }
                       },
                       itemBuilder: (context) => [
+                        if (onGenerateReport != null)
+                          const PopupMenuItem(
+                            value: 'report',
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.picture_as_pdf,
+                                  size: 16,
+                                  color: AppColors.pinkPastel,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Generar Reporte',
+                                  style: TextStyle(color: AppColors.pinkPastel),
+                                ),
+                              ],
+                            ),
+                          ),
                         if (onEdit != null)
                           const PopupMenuItem(
                             value: 'edit',
