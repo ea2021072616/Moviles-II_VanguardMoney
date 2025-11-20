@@ -28,6 +28,10 @@ class _FinancialAnalysisViewState extends ConsumerState<FinancialAnalysisView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    // Rebuild when tab changes so we can show the selected tab's content
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -316,26 +320,31 @@ class _FinancialAnalysisViewState extends ConsumerState<FinancialAnalysisView>
           ),
         ),
 
-        // Contenido de tabs
-        SizedBox(
-          height: 500,
-          child: TabBarView(
-            controller: _tabController,
-            children: [
-              // Tab 1: Categorías
-              CategoryInsightsSection(insights: analysis.categoryInsights),
+        // Contenido de tabs (mostrar la pestaña seleccionada sin altura fija)
+        // Usamos la index del TabController para renderizar el contenido
+        Builder(builder: (context) {
+          final selected = _tabController.index;
+          Widget content;
+          switch (selected) {
+            case 0:
+              content = CategoryInsightsSection(insights: analysis.categoryInsights);
+              break;
+            case 1:
+              content = PatternsSection(patterns: analysis.patterns);
+              break;
+            case 2:
+              content = RecommendationsSection(recommendations: analysis.recommendations);
+              break;
+            case 3:
+            default:
+              content = _buildDetailsTab(analysis);
+          }
 
-              // Tab 2: Patrones
-              PatternsSection(patterns: analysis.patterns),
-
-              // Tab 3: Recomendaciones
-              RecommendationsSection(recommendations: analysis.recommendations),
-
-              // Tab 4: Detalles
-              _buildDetailsTab(analysis),
-            ],
-          ),
-        ),
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 0),
+            child: content,
+          );
+        }),
 
         const SizedBox(height: 80), // Espacio para FAB
       ]),

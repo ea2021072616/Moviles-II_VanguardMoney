@@ -38,7 +38,7 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
 
     return Scaffold(
       backgroundColor: AppColors.white,
-      appBar: _buildAppBar(context),
+      appBar: null,
       body: financialPlansState.when(
         data: (state) => _buildContent(context, state),
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -63,40 +63,7 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
       foregroundColor: theme.colorScheme.onPrimary,
       elevation: 0,
       centerTitle: true,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.sync),
-          onPressed: () async {
-            // Mostrar indicador de carga
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Sincronizando gastos...'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-            
-            // Sincronizar gastos
-            await ref.read(financialPlansViewModelProvider.notifier).syncAllPlansExpenses();
-            
-            // Mostrar confirmación
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Gastos sincronizados exitosamente'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            }
-          },
-          tooltip: 'Sincronizar gastos',
-        ),
-        IconButton(
-          icon: const Icon(Icons.file_download_outlined),
-          onPressed: () => _showExportMenu(context),
-          tooltip: 'Exportar Reportes',
-        ),
-      ],
+      actions: [],
     );
   }
 
@@ -228,23 +195,54 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${plan.monthName} ${plan.year}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${plan.monthName} ${plan.year}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    // Sync button
+                    IconButton(
+                      icon: const Icon(Icons.sync, color: Colors.white),
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Sincronizando gastos...')),
+                        );
+                        await ref.read(financialPlansViewModelProvider.notifier).syncAllPlansExpenses();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Gastos sincronizados exitosamente'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      },
+                      tooltip: 'Sincronizar gastos',
+                    ),
+                    // Export button
+                    IconButton(
+                      icon: const Icon(Icons.file_download_outlined, color: Colors.white),
+                      onPressed: () => _showExportMenu(context),
+                      tooltip: 'Exportar Reportes',
+                    ),
+                  ],
                 ),
               ],
             ),

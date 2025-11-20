@@ -14,13 +14,13 @@ class RecommendationsSection extends StatelessWidget {
       return _buildEmptyState(context);
     }
 
-    return ListView.builder(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      itemCount: recommendations.length,
-      itemBuilder: (context, index) {
-        final recommendation = recommendations[index];
-        return _buildRecommendationCard(context, recommendation);
-      },
+      child: Column(
+        children: recommendations
+            .map((r) => _buildRecommendationCard(context, r))
+            .toList(),
+      ),
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../viewmodels/layout_viewmodel.dart';
+import '../../financial_plans/viewmodels/financial_plans_viewmodel.dart';
 import 'tabs/home_tab_page.dart';
 import 'tabs/planes_tab_page.dart';
 import 'tabs/transacciones_tab_page.dart';
@@ -37,6 +38,20 @@ class MainLayout extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTab = ref.watch(layoutViewModelProvider);
 
+    // Escuchar cambios de tab para sincronizar automáticamente al entrar a "Planes" (índice 1)
+    ref.listen<LayoutNavigationTab>(layoutViewModelProvider, (previous, next) {
+      if ((previous?.tabIndex != next.tabIndex) && next.tabIndex == 1) {
+        // Ejecutar sincronización similar al botón "Actualizar"
+        Future.microtask(() async {
+          try {
+            await ref.read(financialPlansViewModelProvider.notifier).syncAllPlansExpenses();
+          } catch (e) {
+            // Ignorar errores aquí; la vista de planes manejará estados
+          }
+        });
+      }
+    });
+
     // Lista de páginas para IndexedStack - PATRÓN CONSISTENTE DE TABS
     // Reordenadas para poner Análisis IA en el centro (posición 2)
     final pages = [
@@ -55,24 +70,7 @@ class MainLayout extends ConsumerWidget {
         backgroundColor: AppColors.white,
         foregroundColor: AppColors.blackGrey,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            onPressed: () {
-              // TODO: Implementar búsqueda
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Búsqueda próximamente'),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  margin: const EdgeInsets.all(16),
-                ),
-              );
-            },
-          ),
-        ],
+        actions: [],
       ),
       drawer: const ProfileDrawer(),
       body: IndexedStack(index: currentTab.tabIndex, children: pages),

@@ -14,13 +14,11 @@ class PatternsSection extends StatelessWidget {
       return _buildEmptyState(context);
     }
 
-    return ListView.builder(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      itemCount: patterns.length,
-      itemBuilder: (context, index) {
-        final pattern = patterns[index];
-        return _buildPatternCard(context, pattern);
-      },
+      child: Column(
+        children: patterns.map((p) => _buildPatternCard(context, p)).toList(),
+      ),
     );
   }
 

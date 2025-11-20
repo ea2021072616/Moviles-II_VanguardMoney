@@ -14,13 +14,15 @@ class CategoryInsightsSection extends StatelessWidget {
       return _buildEmptyState(context);
     }
 
-    return ListView.builder(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      itemCount: insights.length,
-      itemBuilder: (context, index) {
-        final insight = insights[index];
-        return _buildCategoryCard(context, insight, index);
-      },
+      child: Column(
+        children: insights
+            .asMap()
+            .entries
+            .map((entry) => _buildCategoryCard(context, entry.value, entry.key))
+            .toList(),
+      ),
     );
   }
 
