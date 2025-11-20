@@ -227,78 +227,24 @@ class ReportService {
       planData['id'] = planDoc.id;
       final plan = FinancialPlanModel.fromMap(planData);
 
-      // Obtener transacciones del mes del plan
-      final startDate = DateTime(plan.year, plan.month, 1);
-      final endDate = DateTime(plan.year, plan.month + 1, 0);
-
-      // Obtener egresos/facturas y filtrar en memoria
-      final egresosSnapshot = await _firestore
-          .collection('facturas')
-          .where('idUsuario', isEqualTo: userId)
-          .get();
-
-      // Calcular gastos por categoría
-      Map<String, double> gastosPorCategoria = {};
-      double totalSpent = 0;
-
-      for (var doc in egresosSnapshot.docs) {
-        final data = doc.data();
-        
-        // Filtrar por fecha en memoria
-        DateTime? fecha;
-        if (data['invoiceDate'] != null) {
-          if (data['invoiceDate'] is Timestamp) {
-            fecha = (data['invoiceDate'] as Timestamp).toDate();
-          } else if (data['invoiceDate'] is String) {
-            try {
-              fecha = DateTime.parse(data['invoiceDate'] as String);
-            } catch (e) {
-              continue;
-            }
-          }
-        } else if (data['fecha'] != null) {
-          if (data['fecha'] is Timestamp) {
-            fecha = (data['fecha'] as Timestamp).toDate();
-          } else if (data['fecha'] is String) {
-            try {
-              fecha = DateTime.parse(data['fecha'] as String);
-            } catch (e) {
-              continue;
-            }
-          }
-        }
-        
-        if (fecha == null || fecha.isBefore(startDate) || fecha.isAfter(endDate)) {
-          continue;
-        }
-        
-        final monto = (data['totalAmount'] ?? data['monto'] ?? 0).toDouble();
-        final categoria = data['categoria'] as String? ?? 'Sin categoría';
-        
-        gastosPorCategoria[categoria] = 
-            (gastosPorCategoria[categoria] ?? 0) + monto;
-        totalSpent += monto;
-      }
-
-      // Calcular cumplimiento por categoría
+      // Usar los datos del plan directamente (ya están sincronizados)
       List<CategoryCompliance> categoryCompliances = [];
       
       for (var budget in plan.categoryBudgets) {
-        final spent = gastosPorCategoria[budget.categoryName] ?? 0;
         final compliance = budget.budgetAmount > 0
-            ? (spent / budget.budgetAmount) * 100
+            ? (budget.spentAmount / budget.budgetAmount) * 100
             : 0;
 
         categoryCompliances.add(CategoryCompliance(
           categoryName: budget.categoryName,
           budgetAmount: budget.budgetAmount,
-          spentAmount: spent,
+          spentAmount: budget.spentAmount,
           compliancePercentage: compliance.toDouble(),
         ));
       }
 
       final overallCompliance = plan.totalBudget > 0
-          ? (totalSpent / plan.totalBudget) * 100
+          ? (plan.totalSpent / plan.totalBudget) * 100
           : 0;
 
       return PlanComplianceReportData(
@@ -306,7 +252,7 @@ class ReportService {
         year: plan.year,
         month: plan.month,
         totalBudget: plan.totalBudget,
-        totalSpent: totalSpent,
+        totalSpent: plan.totalSpent,
         compliancePercentage: overallCompliance.toDouble(),
         categoryCompliances: categoryCompliances,
       );

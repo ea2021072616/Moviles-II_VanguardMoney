@@ -80,9 +80,9 @@ class FinancialPlansViewModel extends AsyncNotifier<FinancialPlansState> {
         FinancialPlansLoaded(plans, currentPlan: currentPlan),
       );
 
-      // Auto-sincronizar gastos reales de todos los planes en segundo plano (sin await)
-      // Esto no bloquea la UI
-      unawaited(_autoSyncAllPlans(user.id, plans));
+      // Auto-sincronizar gastos reales de todos los planes inmediatamente
+      // Esto actualiza los datos con los gastos más recientes
+      await _autoSyncAllPlans(user.id, plans);
     } catch (e) {
       state = AsyncValue.data(
         FinancialPlansError('Error al cargar planes: $e'),
@@ -92,20 +92,27 @@ class FinancialPlansViewModel extends AsyncNotifier<FinancialPlansState> {
 
   /// Sincronizar automáticamente los gastos reales de todos los planes
   Future<void> _autoSyncAllPlans(String userId, List<FinancialPlanModel> plans) async {
+    print('=== INICIO AUTO-SINCRONIZACIÓN DE GASTOS ===');
+    print('Planes a sincronizar: ${plans.length}');
+    
     for (final plan in plans) {
       try {
-        await _financialPlansService.syncRealExpenses(
+        print('Sincronizando plan: ${plan.planName} (${plan.month}/${plan.year})');
+        final result = await _financialPlansService.syncRealExpenses(
           planId: plan.id,
           userId: userId,
           year: plan.year,
           month: plan.month,
         );
+        print('Resultado sincronización plan ${plan.planName}: ${result ? "ÉXITO" : "FALLO"}');
       } catch (e) {
         print('Error auto-sincronizando plan ${plan.id}: $e');
       }
     }
+    
     // Recargar silenciosamente después de sincronizar
     try {
+      print('Recargando planes actualizados...');
       final updatedPlans = await _financialPlansService.getUserFinancialPlans(userId);
       final now = DateTime.now();
       final updatedCurrentPlan = await _financialPlansService.getPlanByMonth(
@@ -116,8 +123,57 @@ class FinancialPlansViewModel extends AsyncNotifier<FinancialPlansState> {
       state = AsyncValue.data(
         FinancialPlansLoaded(updatedPlans, currentPlan: updatedCurrentPlan),
       );
+      print('=== FIN AUTO-SINCRONIZACIÓN DE GASTOS ===');
     } catch (e) {
       print('Error recargando después de auto-sync: $e');
+    }
+  }
+
+  /// Sincronizar gastos de un plan específico (método público)
+  Future<void> syncPlanExpenses(String planId) async {
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final currentState = state.value;
+      if (currentState is! FinancialPlansLoaded) return;
+
+      final plan = currentState.plans.firstWhere((p) => p.id == planId);
+      
+      print('Sincronizando gastos del plan ${plan.planName}...');
+      await _financialPlansService.syncRealExpenses(
+        planId: plan.id,
+        userId: user.id,
+        year: plan.year,
+        month: plan.month,
+      );
+
+      // Recargar planes
+      await loadFinancialPlans();
+      print('Gastos sincronizados exitosamente');
+    } catch (e) {
+      print('Error al sincronizar gastos del plan: $e');
+    }
+  }
+
+  /// Sincronizar gastos de todos los planes (método público)
+  Future<void> syncAllPlansExpenses() async {
+    try {
+      final user = ref.read(authStateProvider).value;
+      if (user == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      final currentState = state.value;
+      if (currentState is! FinancialPlansLoaded) return;
+
+      print('Sincronizando gastos de todos los planes...');
+      await _autoSyncAllPlans(user.id, currentState.plans);
+      print('Todos los gastos sincronizados exitosamente');
+    } catch (e) {
+      print('Error al sincronizar todos los gastos: $e');
     }
   }
 
@@ -257,6 +313,29 @@ class FinancialPlansViewModel extends AsyncNotifier<FinancialPlansState> {
       return success;
     } catch (e) {
       print('Error al actualizar gasto de categoría: $e');
+      return false;
+    }
+  }
+
+  /// Actualizar presupuesto en una categoría
+  Future<bool> updateCategoryBudget({
+    required String planId,
+    required String categoryId,
+    required double newBudgetAmount,
+  }) async {
+    try {
+      final success = await _financialPlansService.updateCategoryBudget(
+        planId: planId,
+        categoryId: categoryId,
+        newBudgetAmount: newBudgetAmount,
+      );
+
+      if (success) {
+        await loadFinancialPlans(); // Recargar planes
+      }
+      return success;
+    } catch (e) {
+      print('Error al actualizar presupuesto de categoría: $e');
       return false;
     }
   }

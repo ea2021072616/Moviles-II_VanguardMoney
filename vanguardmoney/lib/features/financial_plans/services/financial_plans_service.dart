@@ -154,6 +154,59 @@ class FinancialPlansService {
     }
   }
 
+  /// Actualizar presupuesto en una categoría específica
+  Future<bool> updateCategoryBudget({
+    required String planId,
+    required String categoryId,
+    required double newBudgetAmount,
+  }) async {
+    try {
+      final planDoc = await _firestore
+          .collection(_collection)
+          .doc(planId)
+          .get();
+
+      if (!planDoc.exists) {
+        throw Exception('Plan no encontrado');
+      }
+
+      final plan = FinancialPlanModel.fromMap({
+        ...planDoc.data()!,
+        'id': planDoc.id,
+      });
+
+      // Actualizar la categoría específica
+      final updatedCategoryBudgets = plan.categoryBudgets.map((cb) {
+        if (cb.categoryId == categoryId) {
+          return cb.copyWith(budgetAmount: newBudgetAmount);
+        }
+        return cb;
+      }).toList();
+
+      // Recalcular el presupuesto total
+      final newTotalBudget = updatedCategoryBudgets.fold(
+        0.0,
+        (sum, cb) => sum + cb.budgetAmount,
+      );
+
+      final updatedPlan = plan.copyWith(
+        categoryBudgets: updatedCategoryBudgets,
+        totalBudget: newTotalBudget,
+        updatedAt: DateTime.now(),
+      );
+
+      await _firestore
+          .collection(_collection)
+          .doc(planId)
+          .update(updatedPlan.toMap());
+
+      return true;
+    } catch (e) {
+      print('Error al actualizar presupuesto de categoría: $e');
+      return false;
+    }
+  }
+
   /// Eliminar (desactivar) un plan financiero
   Future<bool> deleteFinancialPlan(String planId) async {
     try {
@@ -314,31 +367,47 @@ class FinancialPlansService {
       final startDate = DateTime(year, month, 1);
       final endDate = DateTime(year, month + 1, 0, 23, 59, 59, 999);
 
-      // Obtener todas las facturas del mes
+      print('DEBUG syncRealExpenses: Sincronizando gastos del plan ${plan.planName} para $month/$year');
+      print('DEBUG syncRealExpenses: Rango de fechas: $startDate - $endDate');
+
+      // Obtener todas las facturas del usuario
       final facturasSnapshot = await _firestore
           .collection('facturas')
           .where('idUsuario', isEqualTo: userId)
           .get();
 
+      print('DEBUG syncRealExpenses: Total facturas encontradas: ${facturasSnapshot.docs.length}');
+
       // Mapear gastos por categoría
       final Map<String, double> gastosPorCategoria = {};
+      int facturasEnRango = 0;
 
       for (final doc in facturasSnapshot.docs) {
         final data = doc.data();
         
         // Parsear fecha
-        DateTime invoiceDate;
+        DateTime? invoiceDate;
         try {
           final raw = data['invoiceDate'];
-          if (raw == null) continue;
+          if (raw == null) {
+            print('DEBUG syncRealExpenses: Factura ${doc.id} sin invoiceDate');
+            continue;
+          }
+          
           if (raw is Timestamp) {
             invoiceDate = raw.toDate();
           } else if (raw is String) {
-            invoiceDate = DateTime.tryParse(raw) ?? DateTime.now();
+            invoiceDate = DateTime.tryParse(raw);
+            if (invoiceDate == null) {
+              print('DEBUG syncRealExpenses: No se pudo parsear fecha: $raw');
+              continue;
+            }
           } else {
+            print('DEBUG syncRealExpenses: Tipo de fecha desconocido: ${raw.runtimeType}');
             continue;
           }
         } catch (e) {
+          print('DEBUG syncRealExpenses: Error parseando fecha: $e');
           continue;
         }
 
@@ -347,16 +416,24 @@ class FinancialPlansService {
           continue;
         }
 
+        facturasEnRango++;
+        
         final categoria = data['categoria'] ?? 'Otros';
         final monto = _parseDouble(data['totalAmount'] ?? data['monto']);
 
         gastosPorCategoria[categoria] = 
             (gastosPorCategoria[categoria] ?? 0.0) + monto;
+
+        print('DEBUG syncRealExpenses: Factura en rango - Categoría: $categoria, Monto: $monto, Fecha: $invoiceDate');
       }
+
+      print('DEBUG syncRealExpenses: Facturas en rango: $facturasEnRango');
+      print('DEBUG syncRealExpenses: Gastos por categoría: $gastosPorCategoria');
 
       // Actualizar los gastos en el plan
       final updatedBudgets = plan.categoryBudgets.map((cb) {
         final spent = gastosPorCategoria[cb.categoryName] ?? 0.0;
+        print('DEBUG syncRealExpenses: Actualizando categoría ${cb.categoryName} con gasto: $spent');
         return cb.copyWith(spentAmount: spent);
       }).toList();
 
@@ -366,6 +443,8 @@ class FinancialPlansService {
       );
 
       await updateFinancialPlan(updatedPlan);
+      print('DEBUG syncRealExpenses: Plan actualizado exitosamente. Total gastado: ${updatedPlan.totalSpent}');
+      
       return true;
     } catch (e) {
       print('Error al sincronizar gastos reales: $e');
@@ -678,5 +757,68 @@ class FinancialPlansService {
     buffer.writeln('5. Responde SOLO el resumen, sin formato adicional');
 
     return buffer.toString();
+  }
+
+  /// Obtener gastos diarios de los últimos 5 días
+  Future<Map<DateTime, double>> getDailyExpensesLast5Days({
+    required String userId,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final fiveDaysAgo = DateTime(now.year, now.month, now.day - 4);
+      final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
+
+      // Obtener todas las facturas del usuario
+      final facturasSnapshot = await _firestore
+          .collection('facturas')
+          .where('idUsuario', isEqualTo: userId)
+          .get();
+
+      final Map<DateTime, double> dailyExpenses = {};
+
+      // Inicializar los últimos 5 días con 0
+      for (int i = 0; i < 5; i++) {
+        final date = DateTime(now.year, now.month, now.day - (4 - i));
+        dailyExpenses[date] = 0.0;
+      }
+
+      // Procesar facturas
+      for (final doc in facturasSnapshot.docs) {
+        final data = doc.data();
+        
+        DateTime? invoiceDate;
+        try {
+          final raw = data['invoiceDate'];
+          if (raw == null) continue;
+          
+          if (raw is Timestamp) {
+            invoiceDate = raw.toDate();
+          } else if (raw is String) {
+            invoiceDate = DateTime.tryParse(raw);
+            if (invoiceDate == null) continue;
+          } else {
+            continue;
+          }
+        } catch (e) {
+          continue;
+        }
+
+        // Verificar si está en el rango de los últimos 5 días
+        if (invoiceDate.isBefore(fiveDaysAgo) || invoiceDate.isAfter(endOfToday)) {
+          continue;
+        }
+
+        // Normalizar la fecha al inicio del día
+        final dayKey = DateTime(invoiceDate.year, invoiceDate.month, invoiceDate.day);
+        final monto = _parseDouble(data['totalAmount'] ?? data['monto']);
+        
+        dailyExpenses[dayKey] = (dailyExpenses[dayKey] ?? 0.0) + monto;
+      }
+
+      return dailyExpenses;
+    } catch (e) {
+      print('Error al obtener gastos diarios: $e');
+      return {};
+    }
   }
 }

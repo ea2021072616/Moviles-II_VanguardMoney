@@ -866,7 +866,7 @@ class _CreatePlanPageState extends ConsumerState<CreatePlanPage> {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: Implementar reemplazo de plan
+              _replacePlan(existingPlan);
             },
             child: const Text(
               'Reemplazar',
@@ -876,5 +876,155 @@ class _CreatePlanPageState extends ConsumerState<CreatePlanPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _replacePlan(FinancialPlanModel existingPlan) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Primero eliminar el plan existente
+      await ref
+          .read(financialPlansViewModelProvider.notifier)
+          .deleteFinancialPlan(existingPlan.id);
+
+      // Ahora crear el nuevo plan
+      if (_selectedPlanType == PlanType.ai) {
+        final totalBudget = double.parse(_totalBudgetController.text);
+        
+        final aiPlan = await ref
+            .read(financialPlansViewModelProvider.notifier)
+            .generateAIPlanPreview(
+              targetYear: _selectedYear,
+              targetMonth: _selectedMonth,
+              totalBudget: totalBudget,
+            );
+
+        if (aiPlan != null) {
+          // Crear directamente el plan con IA sin mostrar preview
+          final success = await ref
+              .read(financialPlansViewModelProvider.notifier)
+              .createAIPlanFromPreview(aiPlan);
+
+          setState(() {
+            _isLoading = false;
+          });
+
+          if (context.mounted) {
+            if (success) {
+              widget.onPlanCreated?.call();
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Plan con IA reemplazado exitosamente'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Error al reemplazar el plan con IA'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+          return;
+        } else {
+          setState(() {
+            _isLoading = false;
+          });
+          
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Error al generar plan con IA. Verifica que tengas gastos del mes anterior.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+      }
+
+      final totalBudget = double.parse(_totalBudgetController.text);
+
+      if (_selectedPlanType == PlanType.custom) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        if (context.mounted) {
+          final result = await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CustomDistributionDialog(
+                planName: _planNameController.text,
+                year: _selectedYear,
+                month: _selectedMonth,
+                totalBudget: totalBudget,
+                onPlanCreated: () {
+                  widget.onPlanCreated?.call();
+                  Navigator.of(context).pop();
+                },
+              ),
+            ),
+          );
+          
+          if (result == true && context.mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+        return;
+      }
+
+      // Crear plan estándar
+      final success = await ref
+          .read(financialPlansViewModelProvider.notifier)
+          .createFinancialPlan(
+            planName: _planNameController.text,
+            year: _selectedYear,
+            month: _selectedMonth,
+            totalBudget: totalBudget,
+            planType: _selectedPlanType,
+          );
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (context.mounted) {
+        if (success) {
+          widget.onPlanCreated?.call();
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Plan reemplazado exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error al reemplazar el plan'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

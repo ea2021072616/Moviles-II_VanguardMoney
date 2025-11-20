@@ -4,12 +4,12 @@ import '../../models/financial_plan_model.dart';
 
 class CategoryBudgetCard extends StatefulWidget {
   final CategoryBudget categoryBudget;
-  final Function(double)? onUpdateSpent;
+  final Function(double)? onUpdateBudget;
 
   const CategoryBudgetCard({
     super.key,
     required this.categoryBudget,
-    this.onUpdateSpent,
+    this.onUpdateBudget,
   });
 
   @override
@@ -23,7 +23,7 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
   @override
   void initState() {
     super.initState();
-    _controller.text = widget.categoryBudget.spentAmount.toStringAsFixed(2);
+    _controller.text = widget.categoryBudget.budgetAmount.toStringAsFixed(2);
   }
 
   @override
@@ -87,7 +87,7 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                     ],
                   ),
                 ),
-                if (widget.onUpdateSpent != null)
+                if (widget.onUpdateBudget != null)
                   IconButton(
                     onPressed: () {
                       setState(() {
@@ -123,7 +123,7 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Gastado',
+                        'Presupuesto',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.5),
                           fontWeight: FontWeight.w500,
@@ -174,12 +174,9 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                         )
                       else
                         Text(
-                          'S/ ${widget.categoryBudget.spentAmount.toStringAsFixed(2)}',
+                          'S/ ${widget.categoryBudget.budgetAmount.toStringAsFixed(2)}',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: widget.categoryBudget.isOverBudget
-                                ? theme.colorScheme.error
-                                : theme.colorScheme.onSurface,
                             letterSpacing: -0.3,
                           ),
                         ),
@@ -192,7 +189,7 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        'Presupuesto',
+                        'Gastado',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.5),
                           fontWeight: FontWeight.w500,
@@ -200,9 +197,12 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'S/ ${widget.categoryBudget.budgetAmount.toStringAsFixed(2)}',
+                        'S/ ${widget.categoryBudget.spentAmount.toStringAsFixed(2)}',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
+                          color: widget.categoryBudget.isOverBudget
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.onSurface,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -370,10 +370,10 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
 
   void _saveChanges() {
     final newAmount =
-        double.tryParse(_controller.text) ?? widget.categoryBudget.spentAmount;
-    if (newAmount != widget.categoryBudget.spentAmount &&
-        widget.onUpdateSpent != null) {
-      widget.onUpdateSpent!(newAmount);
+        double.tryParse(_controller.text) ?? widget.categoryBudget.budgetAmount;
+    if (newAmount != widget.categoryBudget.budgetAmount &&
+        widget.onUpdateBudget != null) {
+      widget.onUpdateBudget!(newAmount);
     }
   }
 }
