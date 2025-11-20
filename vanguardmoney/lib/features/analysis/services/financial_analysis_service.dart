@@ -302,11 +302,11 @@ class FinancialAnalysisService {
       final aiText = response.text ?? '';
 
       // Parsear recomendaciones del texto de IA
-      return _parseRecommendationsFromAI(aiText, insights);
+      return _parseRecommendationsFromAI(aiText, insights, userProfile);
     } catch (e) {
       print('Error generating AI recommendations: $e');
       // Fallback: generar recomendaciones básicas
-      return _generateBasicRecommendations(summary, insights, patterns);
+      return _generateBasicRecommendations(summary, insights, patterns, userProfile);
     }
   }
 
@@ -426,6 +426,7 @@ class FinancialAnalysisService {
   List<AIRecommendation> _parseRecommendationsFromAI(
     String aiText,
     List<CategoryInsight> insights,
+    Map<String, dynamic>? userProfile,
   ) {
     try {
       // Intentar extraer JSON del texto
@@ -445,7 +446,7 @@ class FinancialAnalysisService {
       //     .trim();
 
       // En una implementación real, usarías dart:convert para parsear cleanJson
-      // Por ahora, generamos recomendaciones básicas
+      // Por ahora, generamos recomendaciones básicas basadas en insights y perfil
       print('AI Response: $jsonText');
       return _generateBasicRecommendations(
         FinancialSummary(
@@ -460,6 +461,7 @@ class FinancialAnalysisService {
         ),
         insights,
         [],
+        userProfile,
       );
     } catch (e) {
       print('Error parsing AI recommendations: $e');
@@ -472,8 +474,18 @@ class FinancialAnalysisService {
     FinancialSummary summary,
     List<CategoryInsight> insights,
     List<SpendingPattern> patterns,
+    Map<String, dynamic>? userProfile,
   ) {
     final recommendations = <AIRecommendation>[];
+
+    // Ajustes basados en perfil demográfico
+    final bool hasChildren =
+        (userProfile != null && (userProfile['tieneHijos'] == true));
+    final int dependents =
+        (userProfile != null && userProfile['numeroDependientes'] != null)
+            ? (userProfile['numeroDependientes'] as int)
+            : 0;
+    // (education level and objectives available in `userProfile` if needed)
 
     // Recomendación 1: Reducir categoría más alta
     if (insights.isNotEmpty) {
@@ -502,17 +514,21 @@ class FinancialAnalysisService {
     }
 
     // Recomendación 2: Mejorar tasa de ahorro
-    if (summary.savingsRate < 20) {
+    double savingsTarget = 20.0;
+    // Si tiene hijos o dependientes, sugerimos objetivo de ahorro mayor
+    if (hasChildren || dependents > 0) savingsTarget = 25.0;
+
+    if (summary.savingsRate < savingsTarget) {
       recommendations.add(
         AIRecommendation(
           id: 'rec_savings_rate',
           title: 'Aumenta tu tasa de ahorro',
           description:
-              'Tu tasa de ahorro actual es ${summary.savingsRate.toStringAsFixed(1)}%. El objetivo recomendado es al menos 20%.',
+              'Tu tasa de ahorro actual es ${summary.savingsRate.toStringAsFixed(1)}%. El objetivo recomendado es al menos ${savingsTarget.toStringAsFixed(0)}%.',
           type: RecommendationType.save,
           category: 'General',
           potentialSavings: summary.totalIncome * 0.2 - summary.balance,
-          priority: summary.savingsRate < 10
+          priority: summary.savingsRate < (savingsTarget / 2)
               ? PriorityLevel.urgent
               : PriorityLevel.high,
           actionSteps: [
@@ -546,6 +562,27 @@ class FinancialAnalysisService {
     }
 
     // Recomendación 4: Optimizar gastos recurrentes
+    // Sugerencia específica para familias o con dependientes
+    if (hasChildren || dependents > 0) {
+      recommendations.add(
+        AIRecommendation(
+          id: 'rec_family_emergency',
+          title: 'Fondo de emergencia familiar',
+          description:
+              'Considerando que tienes dependientes, es recomendable mantener un fondo de emergencia equivalente a 3-6 meses de gastos.',
+          type: RecommendationType.save,
+          category: 'Ahorro',
+          potentialSavings: summary.totalExpenses * 0.1,
+          priority: PriorityLevel.high,
+          actionSteps: [
+            'Calcula tus gastos mensuales esenciales',
+            'Automatiza transferencias a un ahorro separado',
+            'Busca una meta de 3 meses como inicio',
+          ],
+        ),
+      );
+    }
+
     recommendations.add(
       AIRecommendation(
         id: 'rec_optimize',

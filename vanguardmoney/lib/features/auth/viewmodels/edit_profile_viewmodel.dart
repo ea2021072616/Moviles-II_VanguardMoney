@@ -450,12 +450,20 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
         data: (userProfile) async {
           if (userProfile != null) {
             // Crear un perfil actualizado manteniendo los datos originales
+            // Incluir campos demográficos y objetivos financieros para que
+            // el servicio de análisis pueda usarlos.
             final updatedProfile = userProfile.copyWith(
               username: state.profile.username,
               currency: state.profile.currency,
               edad: state.profile.edad,
               ocupacion: state.profile.ocupacion,
               ingresoMensualAprox: state.profile.ingresoMensualAprox,
+              // Nuevos campos demográficos
+              estadoCivil: state.profile.estadoCivil,
+              numeroDependientes: state.profile.numeroDependientes,
+              tieneHijos: state.profile.tieneHijos,
+              nivelEducacion: state.profile.nivelEducacion,
+              objetivosFinancieros: state.profile.objetivosFinancieros,
             );
 
             // Actualizar perfil usando el método correcto del repository
