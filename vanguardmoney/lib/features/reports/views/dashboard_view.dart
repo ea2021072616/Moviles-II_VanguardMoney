@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
 import '../models/dashboard_stats_model.dart';
 import 'dart:math' as math;
+import '../../../core/utils/currency_store.dart';
 
 // Provider para el DashboardViewModel
 final dashboardViewModelProvider =
@@ -372,9 +373,9 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
             ),
             const SizedBox(height: 12),
             Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'S/ ${_formatCurrency(stats.balance)}',
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '${CurrencyStore.get()} ${_formatCurrency(stats.balance)}',
                 style: theme.textTheme.headlineLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                   color: stats.isPositive
@@ -504,7 +505,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
         ),
         const SizedBox(height: 10),
         Text(
-          'S/ ${_formatCurrency(amount)}',
+          '${CurrencyStore.get()} ${_formatCurrency(amount)}',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w700,
             color: color,
@@ -599,7 +600,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'S/ ${_formatCurrency(totalGastos)}',
+                        '${CurrencyStore.get()} ${_formatCurrency(totalGastos)}',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.5,
@@ -745,7 +746,7 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'S/ ${_formatCurrency(category.amount)}',
+                      '${CurrencyStore.get()} ${_formatCurrency(category.amount)}',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                         color: color,
@@ -883,19 +884,19 @@ class _DashboardViewState extends ConsumerState<DashboardView> {
                     _buildPlanDetail(
                       context,
                       'Presupuesto',
-                      'S/ ${_formatCurrency(plan.totalBudget)}',
+                      '${CurrencyStore.get()} ${_formatCurrency(plan.totalBudget)}',
                       theme.colorScheme.primary,
                     ),
                     _buildPlanDetail(
                       context,
                       'Gastado',
-                      'S/ ${_formatCurrency(plan.totalSpent)}',
+                      '${CurrencyStore.get()} ${_formatCurrency(plan.totalSpent)}',
                       statusColor,
                     ),
                     _buildPlanDetail(
                       context,
                       'Restante',
-                      'S/ ${_formatCurrency(plan.remainingAmount)}',
+                      '${CurrencyStore.get()} ${_formatCurrency(plan.remainingAmount)}',
                       theme.colorScheme.tertiary,
                     ),
                   ],

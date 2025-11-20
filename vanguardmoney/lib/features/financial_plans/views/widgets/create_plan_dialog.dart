@@ -5,6 +5,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../models/financial_plan_model.dart';
 import '../../viewmodels/financial_plans_viewmodel.dart';
 import 'custom_distribution_dialog.dart';
+import '../../../../core/utils/currency_store.dart';
 
 class CreatePlanDialog extends ConsumerStatefulWidget {
   final VoidCallback? onPlanCreated;
@@ -81,7 +82,7 @@ class _CreatePlanDialogState extends ConsumerState<CreatePlanDialog> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Presupuesto Total: S/ ${aiPlan.totalBudget.toStringAsFixed(2)}',
+                      'Presupuesto Total: ${CurrencyStore.get()} ${aiPlan.totalBudget.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 16,
                         color: Colors.white,
@@ -121,7 +122,7 @@ class _CreatePlanDialogState extends ConsumerState<CreatePlanDialog> {
                                   ),
                                 ),
                                 Text(
-                                  'S/ ${budget.budgetAmount.toStringAsFixed(2)}',
+                                  '${CurrencyStore.get()} ${budget.budgetAmount.toStringAsFixed(2)}',
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -452,7 +453,7 @@ class _CreatePlanDialogState extends ConsumerState<CreatePlanDialog> {
                               ? 'Presupuesto Total (IA lo distribuirá)'
                               : 'Presupuesto Total',
                           hintText: '0.00',
-                          prefixText: 'S/ ',
+                          prefixText: CurrencyStore.get(),
                           prefixIcon: const Icon(Icons.attach_money),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),

@@ -7,6 +7,7 @@ import '../services/image_service.dart';
 import '../../../core/exceptions/app_exception.dart';
 import '../providers/auth_providers.dart';
 import 'auth_viewmodel.dart';
+import '../../../core/utils/currency_store.dart';
 
 /// Provider para obtener el perfil completo del usuario desde Firestore
 final currentUserProfileProvider = FutureProvider<UserProfileModel?>((
@@ -405,6 +406,11 @@ class EditProfileNotifier extends StateNotifier<EditProfileState> {
 
             // Invalidar el cache del perfil para que se recargue
             _ref.invalidate(currentUserProfileProvider);
+
+              // Actualizar el store en memoria para widgets no-Riverpod
+              try {
+                CurrencyStore.set(currency);
+              } catch (_) {}
 
             state = state.copyWithSuccess();
           } else {

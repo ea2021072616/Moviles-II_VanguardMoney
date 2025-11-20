@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../edit_transactions/viewmodels/edit_transactions_viwmodel.dart';
 import '../../edit_transactions/views/edit_transaction_view.dart';
+import '../../../core/utils/currency_store.dart';
 
 class VerDetalleView extends StatefulWidget {
   final String transaccionId;
@@ -160,8 +161,8 @@ class _VerDetalleViewState extends State<VerDetalleView> {
     VerDetalleViewModel viewModel,
     DetalleTransaccion detalle,
   ) {
-    // Símbolo de moneda fijo (dólares)
-    String simboloMoneda = '\$';
+    // Símbolo de moneda dinámico (en memoria)
+    String simboloMoneda = CurrencyStore.get();
 
     return Container(
       width: double.infinity,

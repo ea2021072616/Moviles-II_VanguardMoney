@@ -34,6 +34,7 @@ class AppRoutes {
   static const String profileSettings = '/profile/settings';
   static const String profilePreferences = '/profile/preferences';
   static const String profileSecurity = '/profile/security';
+  static const String changePassword = '/profile/change-password';
   static const String profilePrivacy = '/profile/privacy';
 
   // ========== RUTAS DE PLANES FINANCIEROS ==========

@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../viewmodels/edit_transactions_viwmodel.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/currency_store.dart';
 
 class EditTransactionView extends StatefulWidget {
   final String transaccionId;
@@ -263,7 +264,7 @@ class _EditTransactionViewState extends State<EditTransactionView> {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: 'Monto',
-        prefixText: '\$ ',
+        prefixText: CurrencyStore.get(),
         prefixIcon: const Icon(Icons.attach_money),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,

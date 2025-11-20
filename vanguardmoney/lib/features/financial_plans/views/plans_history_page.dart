@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_colors.dart';
 import '../models/financial_plan_model.dart';
 import '../viewmodels/financial_plans_viewmodel.dart';
+import '../../../core/utils/currency_store.dart';
 
 class PlansHistoryPage extends ConsumerStatefulWidget {
   const PlansHistoryPage({super.key});
@@ -193,7 +194,7 @@ class _PlansHistoryPageState extends ConsumerState<PlansHistoryPage> {
                           ),
                         ),
                         Text(
-                          'S/ ${plan.totalBudget.toStringAsFixed(2)}',
+                          '${CurrencyStore.get()} ${plan.totalBudget.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -213,7 +214,7 @@ class _PlansHistoryPageState extends ConsumerState<PlansHistoryPage> {
                           ),
                         ),
                         Text(
-                          'S/ ${totalSpent.toStringAsFixed(2)}',
+                          '${CurrencyStore.get()} ${totalSpent.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -347,7 +348,7 @@ class _PlansHistoryPageState extends ConsumerState<PlansHistoryPage> {
                                 ),
                               ),
                               Text(
-                                'S/ ${budget.spentAmount.toStringAsFixed(2)} / S/ ${budget.budgetAmount.toStringAsFixed(2)}',
+                                '${CurrencyStore.get()} ${budget.spentAmount.toStringAsFixed(2)} / ${CurrencyStore.get()} ${budget.budgetAmount.toStringAsFixed(2)}',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.grey[600],

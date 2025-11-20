@@ -138,6 +138,38 @@ class AuthViewModel extends AsyncNotifier<AuthState> {
     }
   }
 
+  /// Cambiar contraseña (requiere la contraseña actual para re-autenticación)
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    state = const AsyncValue.loading();
+
+    try {
+      await _authRepository.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+
+      // Refrescar usuario para propagar cambios
+      await refreshUser();
+
+      // Mantener estado autenticado
+      final currentUser = _authRepository.currentUser;
+      if (currentUser != null) {
+        state = AsyncValue.data(AuthAuthenticated(currentUser));
+      } else {
+        state = const AsyncValue.data(AuthUnauthenticated());
+      }
+    } on AuthException catch (e) {
+      state = AsyncValue.data(AuthError(e.message, code: e.code));
+      rethrow;
+    } catch (e) {
+      state = AsyncValue.data(AuthError('Error inesperado: $e'));
+      rethrow;
+    }
+  }
+
   /// Refrescar información del usuario actual
   Future<void> refreshUser() async {
     try {

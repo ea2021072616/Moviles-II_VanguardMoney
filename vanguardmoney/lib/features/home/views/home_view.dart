@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../auth/viewmodels/auth_viewmodel.dart';
 import '../../../core/constants/app_routes.dart';
 import '../viewmodels/home_viewmodel.dart';
+import '../../../core/utils/currency_store.dart';
 
 // Provider para el HomeViewModel
 final homeViewModelProvider = ChangeNotifierProvider.autoDispose<HomeViewModel>(
@@ -214,7 +215,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
             // Balance Amount - NEGRO/OSCURO
             Text(
-              'S/ ${_formatCurrency(viewModel.balance)}',
+              '${CurrencyStore.get()} ${_formatCurrency(viewModel.balance)}',
               style: Theme.of(context).textTheme.displayLarge?.copyWith(
                 color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w800,
@@ -417,7 +418,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
                   return _buildTransactionItem(
                     context,
                     transaccion.categoria,
-                    '$signo S/ ${_formatCurrency(transaccion.monto)}',
+                    '${signo}${CurrencyStore.get()}${_formatCurrency(transaccion.monto)}',
                     transaccion.icono,
                     color,
                     viewModel.obtenerTextoRelativoFecha(transaccion.fecha),

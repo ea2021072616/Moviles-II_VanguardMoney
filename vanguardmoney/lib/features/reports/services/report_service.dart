@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../core/utils/currency_store.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -518,7 +519,7 @@ class ReportService {
             ),
           ),
           pw.Text(
-            'S/ ${amount.toStringAsFixed(2)}',
+            '${CurrencyStore.get()} ${amount.toStringAsFixed(2)}',
             style: pw.TextStyle(
               color: color,
               fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
@@ -566,7 +567,7 @@ class ReportService {
         final percentage = (entry.value / total * 100).toStringAsFixed(1);
         return [
           entry.key,
-          'S/ ${entry.value.toStringAsFixed(2)}',
+          '${CurrencyStore.get()} ${entry.value.toStringAsFixed(2)}',
           '$percentage%',
         ];
       }).toList(),
@@ -600,8 +601,8 @@ class ReportService {
       data: compliances.map((c) {
         return [
           c.categoryName,
-          'S/ ${c.budgetAmount.toStringAsFixed(2)}',
-          'S/ ${c.spentAmount.toStringAsFixed(2)}',
+          '${CurrencyStore.get()} ${c.budgetAmount.toStringAsFixed(2)}',
+          '${CurrencyStore.get()} ${c.spentAmount.toStringAsFixed(2)}',
           '${c.compliancePercentage.toStringAsFixed(1)}%',
         ];
       }).toList(),

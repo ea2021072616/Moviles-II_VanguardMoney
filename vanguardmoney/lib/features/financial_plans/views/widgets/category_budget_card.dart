@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/currency_store.dart';
 import 'package:flutter/services.dart';
 import '../../models/financial_plan_model.dart';
 
@@ -145,7 +146,7 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                               ),
                             ],
                             decoration: InputDecoration(
-                              prefixText: 'S/ ',
+                              prefixText: CurrencyStore.get(),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
@@ -174,7 +175,7 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                         )
                       else
                         Text(
-                          'S/ ${widget.categoryBudget.budgetAmount.toStringAsFixed(2)}',
+                          '${CurrencyStore.get()} ${widget.categoryBudget.budgetAmount.toStringAsFixed(2)}',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.3,
@@ -197,7 +198,7 @@ class _CategoryBudgetCardState extends State<CategoryBudgetCard> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'S/ ${widget.categoryBudget.spentAmount.toStringAsFixed(2)}',
+                        '${CurrencyStore.get()} ${widget.categoryBudget.spentAmount.toStringAsFixed(2)}',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                           color: widget.categoryBudget.isOverBudget

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/utils/currency_store.dart';
 import '../../models/financial_plan_model.dart';
 import '../../../../core/theme/app_colors.dart';
 
@@ -174,7 +175,7 @@ class PlanCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'S/ ${plan.totalSpent.toStringAsFixed(2)}',
+                          '${CurrencyStore.get()} ${plan.totalSpent.toStringAsFixed(2)}',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -200,7 +201,7 @@ class PlanCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'S/ ${plan.totalBudget.toStringAsFixed(2)}',
+                          '${CurrencyStore.get()} ${plan.totalBudget.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -251,7 +252,7 @@ class PlanCard extends StatelessWidget {
                       Text(
                         plan.isOverBudget
                             ? 'Sobre presupuesto'
-                            : 'S/ ${plan.remainingBudget.toStringAsFixed(2)} restante',
+                            : '${CurrencyStore.get()} ${plan.remainingBudget.toStringAsFixed(2)} restante',
                         style: TextStyle(
                           fontSize: 12,
                           color: plan.isOverBudget

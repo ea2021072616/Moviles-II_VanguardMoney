@@ -5,6 +5,7 @@ import '../viewmodels/ver_detalle_viewmodel.dart';
 import '../services/filtros.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/currency_store.dart';
 import 'ver_detalle_view.dart';
 
 class VerTransaccionesView extends StatefulWidget {
@@ -309,8 +310,8 @@ class _VerTransaccionesViewState extends State<VerTransaccionesView> {
     final Color colorPrincipal = esIngreso ? AppColors.greenJade : AppColors.redCoral;
     final IconData icono = esIngreso ? Icons.trending_up_rounded : Icons.trending_down_rounded;
 
-    // Símbolo de moneda fijo
-    final String simboloMoneda = '\$';
+    // Símbolo de moneda dinámico (almacenado en memoria)
+    final String simboloMoneda = CurrencyStore.get();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12.0),

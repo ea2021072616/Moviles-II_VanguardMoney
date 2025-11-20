@@ -10,6 +10,7 @@ import '../../reports/services/report_service.dart';
 import 'create_plan_page.dart';
 import 'widgets/plan_card.dart';
 import 'widgets/category_budget_card.dart';
+import '../../../core/utils/currency_store.dart';
 
 class FinancialPlansPage extends ConsumerStatefulWidget {
   const FinancialPlansPage({super.key});
@@ -265,7 +266,7 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'S/ ${plan.totalSpent.toStringAsFixed(2)}',
+                        '${CurrencyStore.get()} ${plan.totalSpent.toStringAsFixed(2)}',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -547,7 +548,7 @@ class _FinancialPlansPageState extends ConsumerState<FinancialPlansPage> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'S/ ${expense.toStringAsFixed(0)}',
+                  '${CurrencyStore.get()} ${expense.toStringAsFixed(0)}',
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.black,

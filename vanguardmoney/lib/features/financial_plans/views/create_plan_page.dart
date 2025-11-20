@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../models/financial_plan_model.dart';
 import '../viewmodels/financial_plans_viewmodel.dart';
 import 'widgets/custom_distribution_dialog.dart';
+import '../../../core/utils/currency_store.dart';
 
 class CreatePlanPage extends ConsumerStatefulWidget {
   final VoidCallback? onPlanCreated;
@@ -251,7 +252,7 @@ class _CreatePlanPageState extends ConsumerState<CreatePlanPage> {
               ],
               decoration: InputDecoration(
                 hintText: '0.00',
-                prefixText: 'S/ ',
+                prefixText: CurrencyStore.get(),
                 prefixIcon: const Icon(Icons.attach_money),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),

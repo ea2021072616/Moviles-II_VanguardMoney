@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/currency_store.dart';
 import '../../models/financial_plan_model.dart';
 import '../../../transactions/models/categoria_model.dart';
 import '../../../transactions/services/categoria_service.dart';
@@ -284,7 +285,7 @@ class _CustomDistributionDialogState
                       ),
                     ),
                     Text(
-                      'S/ ${widget.totalBudget.toStringAsFixed(2)}',
+                      '${CurrencyStore.get()} ${widget.totalBudget.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -304,7 +305,7 @@ class _CustomDistributionDialogState
                       ),
                     ),
                     Text(
-                      'S/ ${_remaining.toStringAsFixed(2)}',
+                      '${CurrencyStore.get()} ${_remaining.toStringAsFixed(2)}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -514,8 +515,8 @@ class _CustomDistributionDialogState
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                 ],
-                decoration: const InputDecoration(
-                  prefixText: 'S/ ',
+                decoration: InputDecoration(
+                  prefixText: CurrencyStore.get(),
                   hintText: '0.00',
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(

@@ -54,7 +54,7 @@ class ProfileDrawer extends ConsumerWidget {
                   Icons.lock_outline_rounded,
                   Icons.lock_rounded,
                   'Cambiar Contraseña',
-                  () => _showComingSoon(context, 'Cambiar Contraseña'),
+                  () => context.push(AppRoutes.changePassword),
                   color: AppColors.orangePremium,
                 ),
 

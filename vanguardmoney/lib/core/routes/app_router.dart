@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/auth/views/login_page.dart';
 import '../../features/auth/views/edit_profile_page.dart';
+import '../../features/auth/views/change_password_page.dart';
 import '../../features/layout/views/main_layout.dart';
 import '../../features/analysis/views/ai_analysis_page.dart';
 import '../../features/historial/views/ver_transacciones_view.dart';
@@ -41,6 +42,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/profile/edit',
         name: 'editProfile',
         builder: (context, state) => const EditProfilePage(),
+      ),
+
+      // Ruta para cambiar contraseña
+      GoRoute(
+        path: AppRoutes.changePassword,
+        name: 'changePassword',
+        builder: (context, state) => const ChangePasswordPage(),
       ),
 
       // Ruta para análisis IA
